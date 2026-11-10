@@ -11,3 +11,8 @@ coverage/
 supabase/.temp/
 supabase/.branches/
 *.log
+
+# local env and tooling
+.env*.local
+next-env.d.ts
+*.tsbuildinfo

@@ -1,0 +1,103 @@
+/*
+ * Maidstone Pizza Tailwind v4 theme. Mirrors tokens.ts (a test enforces it).
+ * Import after "tailwindcss" in each app's globals.css.
+ */
+@theme {
+  --color-cream-50: #fefaf0;
+  --color-cream-100: #fbefd5;
+  --color-cream-200: #f6e3bb;
+  --color-cream-300: #ebd19c;
+  --color-cheese: #fde9bd;
+  --color-red-50: #fbeae7;
+  --color-red-100: #f4c9c3;
+  --color-red-500: #bf2f21;
+  --color-red-600: #a3271b;
+  --color-red-700: #84200f;
+  --color-green-50: #e6f0e9;
+  --color-green-100: #c5dccb;
+  --color-green-500: #28633b;
+  --color-green-600: #1f4f2f;
+  --color-green-700: #173b23;
+  --color-ink-900: #151515;
+  --color-ink-700: #3d3a35;
+  --color-ink-500: #625c52;
+  --color-ink-300: #a39c8f;
+  --color-white: #ffffff;
+  --color-amber-500: #b45309;
+  --color-amber-400: #f59e0b;
+  --color-kitchen-bg: #0e0e0e;
+  --color-kitchen-surface: #1c1c1c;
+  --color-kitchen-border: #3a3a3a;
+  --color-kitchen-text: #ffffff;
+  --color-kitchen-muted: #c9c9c9;
+  --color-kitchen-red: #ff6b5b;
+  --color-kitchen-green: #5fd08a;
+  --color-kitchen-amber: #ffc14d;
+
+  /* Apps set --font-display-face / --font-body-face via next/font. */
+  --font-display: var(--font-display-face), 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-sans: var(--font-body-face), 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  --shadow-card: 0 1px 2px rgb(21 21 21 / 0.06), 0 6px 20px rgb(21 21 21 / 0.08);
+  --shadow-raised: 0 2px 4px rgb(21 21 21 / 0.08), 0 14px 34px rgb(21 21 21 / 0.14);
+
+  --ease-brand: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --animate-rays: mp-rays 40s linear infinite;
+  --animate-pop: mp-pop 200ms var(--ease-brand);
+
+  @keyframes mp-rays {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes mp-pop {
+    0% {
+      transform: scale(0.96);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--color-ink-900);
+    background: var(--color-cream-100);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-green-500);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

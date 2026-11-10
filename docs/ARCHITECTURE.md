@@ -1,44 +1,44 @@
 # Maidstone Pizza — Architecture
 
-Status: **plan, awaiting sign-off** (2026-11-10). Nothing here is built yet. Items marked _verify_ must be checked against current official docs at implementation time; no third-party API detail is to be written from memory.
+Status: **approved 2026-11-10; Phase 1 built.** Later phases are still plan. Items marked _verify_ must be checked against current official docs at implementation time; no third-party API detail is to be written from memory.
 
 ## 1. Fixed platform decisions
 
-| Concern | Choice |
-| --- | --- |
-| Database, Auth, Realtime, Storage | Supabase (Postgres), London `eu-west-2` |
-| Hosting (web apps + API) | Vercel, functions pinned to `lhr1` |
-| Payments | Stripe (Payment Intents) |
-| Mobile | React Native with Expo (EAS Build/Submit) |
+| Concern                           | Choice                                    |
+| --------------------------------- | ----------------------------------------- |
+| Database, Auth, Realtime, Storage | Supabase (Postgres), London `eu-west-2`   |
+| Hosting (web apps + API)          | Vercel, functions pinned to `lhr1`        |
+| Payments                          | Stripe (Payment Intents)                  |
+| Mobile                            | React Native with Expo (EAS Build/Submit) |
 
 ## 2. Stack choices
 
-| Area | Choice | Why |
-| --- | --- | --- |
-| Monorepo | pnpm workspaces + Turborepo | Shared packages with cached, dependency-aware builds; first-class on Vercel. |
-| Language | TypeScript (strict) everywhere | One type system from DB types to mobile screens. |
-| Customer web | Next.js App Router + Tailwind | SSR/ISR for local SEO, `next/font` self-hosting, image optimisation. |
-| Admin | Separate Next.js app | Different audience, auth gate and release cadence; keeps admin code out of the public bundle. |
-| Kitchen | Separate Next.js PWA (client-rendered) | Locked-down single screen, installable on a tablet, own service worker and wake-lock. |
-| API | **Hono on Vercel Functions** with `@hono/zod-openapi` | Routes are defined from the shared zod schemas, so validation, OpenAPI docs and the typed client come from one source; tiny cold start; raw-body access for webhook signatures is straightforward. Next Route Handlers would work but give no OpenAPI or typed client without extra layers. |
-| Validation | zod in `packages/validation` | Same schemas on client forms, API input and env parsing. |
-| DB access | `supabase-js` (RLS-scoped user client for reads; service-role client only in `apps/api`) + SQL functions for multi-statement transactions | Keeps RLS as the real boundary; transactional work (order creation, state transitions) lives in Postgres functions called via RPC. |
-| Migrations | Supabase CLI (`supabase/migrations`), `supabase gen types` | Reviewable SQL, reproducible local stack, generated types. |
-| RLS tests | pgTAP via `supabase test db` | Policies tested in the database, per role, in CI. |
-| Unit tests | Vitest | Fast, native TS/ESM, works across all packages. |
-| E2E tests | Playwright | Critical path browse → basket → pay (Stripe test mode) → kitchen sees order. |
-| Mobile | Expo (dev client, Expo Router), `@stripe/stripe-react-native`, Expo Notifications | Required by brief; dev client is needed for native Google/Apple sign-in and Stripe. |
-| Client data | TanStack Query + Zustand (basket) | Caching/retries/polling fallback for server state; small persisted store for the basket. |
-| Email | Resend + React Email | Templated transactional email from the same TS codebase. |
-| SMS (optional) | Twilio, behind a `Notifier` interface | Off by default. |
-| Jobs | Postgres `jobs` outbox table + Vercel Cron + `pg_cron` | See §8. |
-| Errors / logs | Sentry + structured JSON logs (pino) | One error pipeline across web, API and mobile. |
-| Analytics | Plausible (cookieless) + first-party funnel events | No tracking before consent; minimal GDPR surface. |
-| Bot protection | Cloudflare Turnstile on checkout + Stripe Radar | Free, privacy-friendly, no puzzle for most users. |
-| Rate limiting | Postgres-backed fixed-window limiter in `apps/api` | No extra vendor; adequate for one shop. Swappable for Upstash later. |
-| Address lookup | getAddress.io behind an `AddressLookup` interface | Purpose-built for UK postcodes and cheaper than Google Places; _verify_ current pricing/API. |
-| Feature flags | `feature_flags` table read through the API | Simple, admin-editable, no vendor. |
-| CI | GitHub Actions | Lint, typecheck, tests, build, migration check, dependency audit. |
+| Area           | Choice                                                                                                                                    | Why                                                                                                                                                                                                                                                                                         |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Monorepo       | pnpm workspaces + Turborepo                                                                                                               | Shared packages with cached, dependency-aware builds; first-class on Vercel.                                                                                                                                                                                                                |
+| Language       | TypeScript (strict) everywhere                                                                                                            | One type system from DB types to mobile screens.                                                                                                                                                                                                                                            |
+| Customer web   | Next.js App Router + Tailwind                                                                                                             | SSR/ISR for local SEO, `next/font` self-hosting, image optimisation.                                                                                                                                                                                                                        |
+| Admin          | Separate Next.js app                                                                                                                      | Different audience, auth gate and release cadence; keeps admin code out of the public bundle.                                                                                                                                                                                               |
+| Kitchen        | Separate Next.js PWA (client-rendered)                                                                                                    | Locked-down single screen, installable on a tablet, own service worker and wake-lock.                                                                                                                                                                                                       |
+| API            | **Hono on Vercel Functions** with `@hono/zod-openapi`                                                                                     | Routes are defined from the shared zod schemas, so validation, OpenAPI docs and the typed client come from one source; tiny cold start; raw-body access for webhook signatures is straightforward. Next Route Handlers would work but give no OpenAPI or typed client without extra layers. |
+| Validation     | zod in `packages/validation`                                                                                                              | Same schemas on client forms, API input and env parsing.                                                                                                                                                                                                                                    |
+| DB access      | `supabase-js` (RLS-scoped user client for reads; service-role client only in `apps/api`) + SQL functions for multi-statement transactions | Keeps RLS as the real boundary; transactional work (order creation, state transitions) lives in Postgres functions called via RPC.                                                                                                                                                          |
+| Migrations     | Supabase CLI (`supabase/migrations`), `supabase gen types`                                                                                | Reviewable SQL, reproducible local stack, generated types.                                                                                                                                                                                                                                  |
+| RLS tests      | pgTAP via `supabase test db`                                                                                                              | Policies tested in the database, per role, in CI.                                                                                                                                                                                                                                           |
+| Unit tests     | Vitest                                                                                                                                    | Fast, native TS/ESM, works across all packages.                                                                                                                                                                                                                                             |
+| E2E tests      | Playwright                                                                                                                                | Critical path browse → basket → pay (Stripe test mode) → kitchen sees order.                                                                                                                                                                                                                |
+| Mobile         | Expo (dev client, Expo Router), `@stripe/stripe-react-native`, Expo Notifications                                                         | Required by brief; dev client is needed for native Google/Apple sign-in and Stripe.                                                                                                                                                                                                         |
+| Client data    | TanStack Query + Zustand (basket)                                                                                                         | Caching/retries/polling fallback for server state; small persisted store for the basket.                                                                                                                                                                                                    |
+| Email          | Resend + React Email                                                                                                                      | Templated transactional email from the same TS codebase.                                                                                                                                                                                                                                    |
+| SMS (optional) | Twilio, behind a `Notifier` interface                                                                                                     | Off by default.                                                                                                                                                                                                                                                                             |
+| Jobs           | Postgres `jobs` outbox table + Vercel Cron + `pg_cron`                                                                                    | See §8.                                                                                                                                                                                                                                                                                     |
+| Errors / logs  | Sentry + structured JSON logs (pino)                                                                                                      | One error pipeline across web, API and mobile.                                                                                                                                                                                                                                              |
+| Analytics      | Plausible (cookieless) + first-party funnel events                                                                                        | No tracking before consent; minimal GDPR surface.                                                                                                                                                                                                                                           |
+| Bot protection | Cloudflare Turnstile on checkout + Stripe Radar                                                                                           | Free, privacy-friendly, no puzzle for most users.                                                                                                                                                                                                                                           |
+| Rate limiting  | Postgres-backed fixed-window limiter in `apps/api`                                                                                        | No extra vendor; adequate for one shop. Swappable for Upstash later.                                                                                                                                                                                                                        |
+| Address lookup | getAddress.io behind an `AddressLookup` interface                                                                                         | Purpose-built for UK postcodes and cheaper than Google Places; _verify_ current pricing/API.                                                                                                                                                                                                |
+| Feature flags  | `feature_flags` table read through the API                                                                                                | Simple, admin-editable, no vendor.                                                                                                                                                                                                                                                          |
+| CI             | GitHub Actions                                                                                                                            | Lint, typecheck, tests, build, migration check, dependency audit.                                                                                                                                                                                                                           |
 
 ## 3. Repository layout
 
@@ -55,6 +55,7 @@ packages/
   validation/ zod schemas (API contracts, env, forms)
   pricing/    pure pricing + promotion engine (no I/O)
   api-client/ typed client for apps/api
+  web-auth/   Next.js Supabase session helpers and role gate shared by web, admin, kitchen
   channels/   OrderChannelAdapter + Uber Eats / Just Eat / Deliveroo / middleware / mock adapters
   config/     shared eslint, tsconfig, tailwind preset
 supabase/
@@ -79,36 +80,44 @@ docs/         ARCHITECTURE, DEPLOYMENT, MENU_IMPORT_NOTES, GO_LIVE, AUTH_SETUP, 
 All money is integer pence. All tables have RLS enabled. Timestamps are `timestamptz`; shop-local logic uses `Europe/London`.
 
 **Identity**
+
 - `profiles` (1:1 `auth.users`): name, phone, `stripe_customer_id`, marketing opt-in + timestamp, blocked flag, internal notes.
 - `addresses`: per-user saved delivery addresses.
-- `staff_invites`; roles (`customer | kitchen | manager | admin`) live in `app_metadata` and are injected as a JWT claim by a custom access token hook (_verify_ hook contract), so RLS reads the role from the token.
+- `user_roles` holds staff roles (`kitchen | manager | admin`; no row means `customer`). A custom access token hook copies the role into the `user_role` JWT claim, so RLS and the API read it from the verified token. `customer_flags` (blocked, internal notes) is a separate staff-only table so customers can never read it. `staff_invites` comes in Phase 6.
 
 **Menu**
+
 - `categories`, `menu_items`, `item_variants` (size, price), `option_groups` (crust, toppings, deal slots; min/max rules), `options`, `option_prices` (price by size), `item_option_groups` (link + ordering).
 - `allergens` (the 14), `item_allergens`, `option_allergens`, `dietary_tags`, `item_dietary_tags`.
 - `channel_prices`: per-channel price overrides for variants and options.
 - Availability: `is_published`, `sold_out_until` on items and options.
 
 **Shop configuration**
+
 - `shop_settings` (single row: VAT, prep times, busy mode, cash toggle, receipt text, business details), `opening_hours`, `holiday_closures`, `delivery_zones` (postcode prefixes and/or radius, fee, minimum), `notification_templates`, `feature_flags`.
 
 **Orders**
+
 - `orders`: number, channel (`web | app | phone | uber_eats | just_eat | deliveroo`), fulfilment, status enum, scheduled time, customer snapshot, address snapshot, totals (subtotal, discount, delivery fee, tip, VAT, total), payment method, guest lookup-token hash, external order id, platform commission, allergen acknowledgement.
 - `order_items`, `order_item_options`: **snapshots** of names, prices and allergens at time of order, so later menu edits never alter history.
 - `order_status_events`: every transition with actor, timestamp and reason.
 - `payments`, `refunds`, `stripe_events` (processed event ids for idempotency).
 
 **Promotions**
+
 - `promotions`: type, JSON rule set validated by zod (conditions, rewards, schedule, channels, fulfilment, stacking group, priority, exclusivity), status, banner fields.
 - `promo_codes`, `promotion_redemptions` (per order, with discount amount for reporting and usage caps).
 
 **Channels**
+
 - `channel_connections`, `channel_events` (raw webhook payloads, dedupe key, processing state), `channel_menu_mappings`.
 
 **Operations**
+
 - `jobs` (outbox/queue), `audit_log`, `push_tokens`, `feedback`, `rate_limits`.
 
 **Phase 2, schema reserved now**
+
 - `loyalty_accounts`, `loyalty_ledger`, `gift_cards`, `gift_card_ledger`.
 
 ### Order state machine
@@ -133,16 +142,16 @@ Defined once as a transition table in `packages/types`, used by the API, and mir
 
 ## 7. API surface (`apps/api`, all under `/v1`)
 
-| Group | Endpoints |
-| --- | --- |
-| Public | `GET /health`, `GET /menu`, `GET /shop/status`, `POST /delivery/check`, `GET /address/lookup`, `GET /promotions/active` |
-| Basket / checkout | `POST /basket/price`, `POST /checkout` (creates `PENDING_PAYMENT` order + PaymentIntent), `GET /orders/:id` (owner or guest token), `POST /orders/:id/reorder`, `POST /orders/:id/feedback` |
-| Account | `GET/PATCH /me`, addresses CRUD, `GET /me/payment-methods`, `POST /me/setup-intent`, `GET /me/export`, `DELETE /me`, `POST /me/push-tokens` |
-| Kitchen (role ≥ kitchen) | `GET /kitchen/orders?since=`, `POST /kitchen/orders/:id/accept`, `/reject`, `/status`, `/items/:itemId/done`, `/print` |
-| Admin (role ≥ manager) | menu, promotions, orders (incl. `/refund`, manual order entry), customers, settings, zones, hours, staff, reports, audit log, integrations, mappings, simulator |
-| Webhooks | `POST /webhooks/stripe`, `POST /webhooks/channels/:channel` |
-| Cron | `POST /cron/jobs`, `/cron/expire-pending`, `/cron/retention` (protected by cron secret) |
-| Docs | `GET /openapi.json`, `GET /docs` |
+| Group                    | Endpoints                                                                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public                   | `GET /health`, `GET /menu`, `GET /shop/status`, `POST /delivery/check`, `GET /address/lookup`, `GET /promotions/active`                                                                     |
+| Basket / checkout        | `POST /basket/price`, `POST /checkout` (creates `PENDING_PAYMENT` order + PaymentIntent), `GET /orders/:id` (owner or guest token), `POST /orders/:id/reorder`, `POST /orders/:id/feedback` |
+| Account                  | `GET/PATCH /me`, addresses CRUD, `GET /me/payment-methods`, `POST /me/setup-intent`, `GET /me/export`, `DELETE /me`, `POST /me/push-tokens`                                                 |
+| Kitchen (role ≥ kitchen) | `GET /kitchen/orders?since=`, `POST /kitchen/orders/:id/accept`, `/reject`, `/status`, `/items/:itemId/done`, `/print`                                                                      |
+| Admin (role ≥ manager)   | menu, promotions, orders (incl. `/refund`, manual order entry), customers, settings, zones, hours, staff, reports, audit log, integrations, mappings, simulator                             |
+| Webhooks                 | `POST /webhooks/stripe`, `POST /webhooks/channels/:channel`                                                                                                                                 |
+| Cron                     | `POST /cron/jobs`, `/cron/expire-pending`, `/cron/retention` (protected by cron secret)                                                                                                     |
+| Docs                     | `GET /openapi.json`, `GET /docs`                                                                                                                                                            |
 
 Payment rule: an order leaves `PENDING_PAYMENT` only inside the verified `payment_intent.succeeded` webhook handler. The client's success callback only navigates to the tracking page.
 
@@ -188,11 +197,11 @@ There is no long-running worker. Work that must survive a function timeout or a 
 
 ## 13. Environments
 
-| Env | Supabase | Vercel | Stripe |
-| --- | --- | --- | --- |
-| local | CLI stack (Docker) or a personal dev project | `pnpm dev` | test mode + Stripe CLI |
-| staging | staging project | Preview deployments + `staging` branch | test mode |
-| production | production project (PITR enabled) | Production | live mode |
+| Env        | Supabase                                     | Vercel                                 | Stripe                 |
+| ---------- | -------------------------------------------- | -------------------------------------- | ---------------------- |
+| local      | CLI stack (Docker) or a personal dev project | `pnpm dev`                             | test mode + Stripe CLI |
+| staging    | staging project                              | Preview deployments + `staging` branch | test mode              |
+| production | production project (PITR enabled)            | Production                             | live mode              |
 
 Four Vercel projects (`web`, `admin`, `kitchen`, `api`) from one repo, each with its own root directory. Env vars are validated with zod at startup; each app has a `.env.example`.
 
@@ -216,7 +225,7 @@ Each phase ends with tests, lint and typecheck green, docs updated, a commit, an
 
 ## 16. Findings from the initial survey (2026-11-10)
 
-- **Logo missing:** `assets/brand/maidstone-pizza-logo.png` is not in the repo yet. Brand tokens and all icon generation are blocked on it.
+- **Logo:** supplied 2026-11-10 as a 2000×2000 PNG (renamed from `Logo.png`). Large enough for every derivative; no SVG needed. Sampled colours: cream `#FBEFD5`, red `#BF2F21`, green `#28633B`, ink `#151515`.
 - **Menu source is readable.** Navigation exposes seven categories: Pizzas, Sides & Starters, **Pastas** (not in the brief's page list), Special Offers, Desserts, Drinks, Dips. Listing pages show only "from" prices; sizes, crusts and toppings are on per-item pages, which the importer must visit. An allergen/nutrition page also exists.
 - **Existing `data/menu.seed.json`** holds 22 pizzas with "from" prices only and no sizes or options. Phase 2 replaces it with the full normalised schema.
 - **Possible trademark flag:** "GoGo Special" carries the source brand's name and needs renaming.

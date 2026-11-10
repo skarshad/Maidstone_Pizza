@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+@import '@mp/ui/theme.css';
+@source '../../../../packages/ui/src';
+
+/* Admin: neutral and dense, brand red as the accent. */
+html {
+  background: var(--color-white);
+}

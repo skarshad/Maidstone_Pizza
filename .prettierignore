@@ -1,0 +1,10 @@
+node_modules
+.next
+.turbo
+dist
+pnpm-lock.yaml
+packages/types/src/database.ts
+data/menu.seed.json
+assets
+**/public/brand
+supabase/.temp

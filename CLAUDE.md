@@ -2,7 +2,7 @@
 
 Ordering platform for a pizza takeaway in Maidstone, Kent: customer web, admin, kitchen display, API, iOS/Android. Full design in `docs/ARCHITECTURE.md`. Read it before making structural changes.
 
-**Current state:** planning complete, awaiting client answers. No code scaffolded yet. Update this line at the end of every phase.
+**Current state (2026-11-10):** Phase 1 code complete and committed. Not yet done, blocked on owner accounts: Supabase dev project (migrations never applied to a real database, pgTAP tests never run), auth providers, Git remote, first Vercel preview deploy. Next: Phase 2 (menu import). Update this line at the end of every phase.
 
 ## Fixed decisions (ask before changing)
 
@@ -35,22 +35,30 @@ Supabase (London, `eu-west-2`) · Vercel (`lhr1`) · Stripe · Expo · pnpm + Tu
 
 ## Commands
 
-Planned; confirm each exists in `package.json` once Phase 1 lands.
+All exist in the root `package.json` unless marked planned.
 
 ```
 pnpm install              install everything
 pnpm dev                  run web, admin, kitchen and api together
 pnpm lint | typecheck | test | build
-pnpm test:e2e             Playwright critical path
-pnpm db:start             supabase start (needs Docker)
-pnpm db:reset             re-apply migrations + seed
+pnpm check:secrets        fail if server secrets are referenced by client code or committed
+pnpm db:start             supabase start (needs Docker; not available on this machine)
+pnpm db:push              apply migrations to the linked Supabase project
 pnpm db:test              pgTAP RLS and state-machine tests
 pnpm db:types             regenerate packages/types from the database
-pnpm menu:import          scrape source menu → data/menu.seed.json
-pnpm menu:seed            load data/menu.seed.json into the database
 pnpm brand:assets         generate icons, splash, OG image from the logo
-pnpm simulate:order       fire a fake delivery-platform webhook
 ```
+
+Planned: `pnpm test:e2e` (Phase 3), `pnpm menu:import` / `pnpm menu:seed` (Phase 2), `pnpm simulate:order` (Phase 7).
+
+Builds and `next dev` need the four `NEXT_PUBLIC_*` variables set (placeholders are fine for a build; see `.github/workflows/ci.yml`).
+
+## Client decisions (2026-11-10)
+
+- Repo stays in its current OneDrive folder (client choice). Expect slow installs and turbo runs (2 to 4 minutes for a full check).
+- No Docker: develop against a cloud dev Supabase project.
+- Defaults accepted, all placeholders to be confirmed before launch: delivery to ME14/ME15/ME16, £2.50 fee, £12 minimum, own drivers; no alcohol; cards + Apple Pay + Google Pay, cash built but off; hours 4pm to 11pm daily; one tablet/monitor in the kitchen, no printer; free tiers while building; add a Pastas page.
+- No domain yet; placeholder `maidstonepizza.co.uk`.
 
 ## End-of-phase checklist
 
@@ -59,5 +67,9 @@ Lint, typecheck and tests green → docs updated → commit → short summary to
 ## Environment notes
 
 - Windows 11, PowerShell primary; Git Bash available. Node 25, pnpm 12, Supabase CLI 3.1.
-- No Docker or WSL on this machine as of 2026-11-10, so the local Supabase stack cannot run here yet.
-- The folder is inside OneDrive; `node_modules` must not live in a synced folder.
+- No Docker or WSL on this machine as of 2026-11-10, so the local Supabase stack cannot run here.
+- pnpm enforces a minimum release age on dependencies. If install rejects a just-published package, pin an older version; do not relax the policy.
+- typescript is pinned to 6.0.x because typescript-eslint does not support 7 yet.
+- Supabase keys use the current names: publishable key (clients) and secret key (API only). Next.js 16 uses `proxy.ts`, not `middleware.ts`.
+- Roles live in `public.user_roles`; the custom access token hook copies them into the `user_role` JWT claim. `packages/web-auth` holds the shared Next.js session and role-gate code.
+- Never stop servers with a blanket `taskkill node.exe`; run them as background tasks and stop that task.

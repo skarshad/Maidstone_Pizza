@@ -1,0 +1,37 @@
+{
+  "name": "@mp/admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@mp/api-client": "workspace:*",
+    "@mp/types": "workspace:*",
+    "@mp/ui": "workspace:*",
+    "@mp/validation": "workspace:*",
+    "@mp/web-auth": "workspace:*",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@mp/config": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^10.14.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "~6.0.0",
+    "vitest": "^5.1.0"
+  }
+}

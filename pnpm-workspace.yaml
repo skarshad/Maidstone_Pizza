@@ -1,0 +1,10 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Dependencies allowed to run install scripts (native binaries).
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+  '@tailwindcss/oxide': true

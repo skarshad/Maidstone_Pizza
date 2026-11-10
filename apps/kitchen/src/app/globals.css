@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+@import '@mp/ui/theme.css';
+@source '../../../../packages/ui/src';
+
+/* Kitchen display: dark, high contrast, large type. */
+html {
+  background: var(--color-kitchen-bg);
+  color: var(--color-kitchen-text);
+  font-size: 18px;
+}
+:focus-visible {
+  outline-color: var(--color-kitchen-amber);
+}
