@@ -1,0 +1,167 @@
+{
+  "categories": [
+    "Pizzas",
+    "Sides & Starters",
+    "Pastas",
+    "Special Offers",
+    "Desserts",
+    "Drinks",
+    "Dips"
+  ],
+  "items": [
+    {
+      "name": "GoGo Special",
+      "category": "Pizzas",
+      "price_pence": 1499,
+      "description": "Green Peppers, Mushrooms, Onions, Ham, Beef & Pepperoni",
+      "dietary": []
+    },
+    {
+      "name": "Cheese & Tomato",
+      "category": "Pizzas",
+      "price_pence": 999,
+      "description": "Cheese & Tomato",
+      "dietary": ["Vegetarian"]
+    },
+    {
+      "name": "Double Pepperoni",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Double cheese and double pepperoni, on a tomato base",
+      "dietary": []
+    },
+    {
+      "name": "Meaty-One",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Ham, Pepperoni, Beef, Bacon",
+      "dietary": []
+    },
+    {
+      "name": "Alligator",
+      "category": "Pizzas",
+      "price_pence": 1499,
+      "description": "Pepperoni, Ham, Bacon, Sausage & Salami.",
+      "dietary": []
+    },
+    {
+      "name": "Garlic Sizzler",
+      "category": "Pizzas",
+      "price_pence": 1499,
+      "description": "Tomato sauce, Chicken, Bacon, Pepperoni, Green and Red Peppers, drizzled with Garlic Sauce",
+      "dietary": []
+    },
+    {
+      "name": "BBQ-Original",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Chicken, Green Peppers, Fried Onion & Special BBQ Sauce!",
+      "dietary": []
+    },
+    {
+      "name": "Meatball Feast",
+      "category": "Pizzas",
+      "price_pence": 1499,
+      "description": "Bacon, Garlic Sausage, Meatball, Pepperoni, & BBQ Sauce Base",
+      "dietary": []
+    },
+    {
+      "name": "BBQ Beast",
+      "category": "Pizzas",
+      "price_pence": 1499,
+      "description": "BBQ Sauce, Chicken, Pepperoni, Meatballs, Green Peppers, Red Peppers & Jalapeno Peppers.",
+      "dietary": ["Hot"]
+    },
+    {
+      "name": "Flaming Torch",
+      "category": "Pizzas",
+      "price_pence": 1499,
+      "description": "Pepperoni, Tandoori Chicken, Onion, Jalapeno Peppers, Green Chillies, Garlic Sauce",
+      "dietary": []
+    },
+    {
+      "name": "Chicken Hot",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Tandoori Chicken, Green Chillies, Fresh Tomato & Mushrooms",
+      "dietary": ["Hot"]
+    },
+    {
+      "name": "Tuna Thunder",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Tuna, Fresh Tomato, Green Chillies & Fresh Garlic",
+      "dietary": ["Hot"]
+    },
+    {
+      "name": "Vegetarian Hot",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Mushrooms, Onions, Green Peppers, Jalapeno Peppers",
+      "dietary": ["Vegetarian", "Hot"]
+    },
+    {
+      "name": "Vegetarian",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Mushrooms, Onions, Green Peppers & Sweetcorn",
+      "dietary": ["Vegetarian"]
+    },
+    {
+      "name": "Hawaiian",
+      "category": "Pizzas",
+      "price_pence": 1199,
+      "description": "Ham & Pineapple",
+      "dietary": []
+    },
+    {
+      "name": "Ham & Mushroom",
+      "category": "Pizzas",
+      "price_pence": 1199,
+      "description": "Ham & Mushroom",
+      "dietary": []
+    },
+    {
+      "name": "Pepperoni-Plus",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Double Pepperoni, Mushrooms, Onions",
+      "dietary": []
+    },
+    {
+      "name": "American Hot",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Pepperoni, onions, chillies & green peppers.",
+      "dietary": ["Hot"]
+    },
+    {
+      "name": "New Yorker",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "American Hotdog, BBQ Sauce, Melted Cheese & Fried Onions.",
+      "dietary": []
+    },
+    {
+      "name": "Chinese",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Chinese Chicken, Mushrooms & Sweetcorn",
+      "dietary": []
+    },
+    {
+      "name": "Mexicana",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Spicy Beef, Onions, Sliced Tomato, Green Chillies",
+      "dietary": ["Hot"]
+    },
+    {
+      "name": "Mexican Passion",
+      "category": "Pizzas",
+      "price_pence": 1399,
+      "description": "Mexican chicken, red peppers, pineapple and Jalapeno.",
+      "dietary": ["Hot"]
+    }
+  ]
+}
