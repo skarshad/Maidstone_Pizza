@@ -2,7 +2,7 @@
 
 Ordering platform for a pizza takeaway in Maidstone, Kent: customer web, admin, kitchen display, API, iOS/Android. Full design in `docs/ARCHITECTURE.md`. Read it before making structural changes.
 
-**Current state (2026-11-10):** Phase 1 code complete and committed. Not yet done, blocked on owner accounts: Supabase dev project (migrations never applied to a real database, pgTAP tests never run), auth providers, Git remote, first Vercel preview deploy. Next: Phase 2 (menu import). Update this line at the end of every phase.
+**Current state (2026-11-11):** Phase 1 code complete and committed. Dev Supabase project `maidstone-pizza-dev` is linked, the baseline migration is applied and the 24 policy tests pass against it. Still open, on the owner: enable the Custom Access Token hook in the dashboard, auth providers, Git remote, first Vercel preview deploy, and whether dev stays in Ireland (`eu-west-1`, created there by mistake; staging and production must be London). Sign-in not yet tested end to end. Next: Phase 2 (menu import). Update this line at the end of every phase.
 
 ## Fixed decisions (ask before changing)
 
@@ -44,7 +44,8 @@ pnpm lint | typecheck | test | build
 pnpm check:secrets        fail if server secrets are referenced by client code or committed
 pnpm db:start             supabase start (needs Docker; not available on this machine)
 pnpm db:push              apply migrations to the linked Supabase project
-pnpm db:test              pgTAP RLS and state-machine tests
+pnpm db:test              pgTAP RLS and state-machine tests (needs Docker; used in CI)
+pnpm db:test:remote       same tests against the linked dev project, no Docker; always rolled back
 pnpm db:types             regenerate packages/types from the database
 pnpm brand:assets         generate icons, splash, OG image from the logo
 ```
@@ -67,7 +68,8 @@ Lint, typecheck and tests green → docs updated → commit → short summary to
 ## Environment notes
 
 - Windows 11, PowerShell primary; Git Bash available. Node 25, pnpm 12, Supabase CLI 3.1.
-- No Docker or WSL on this machine as of 2026-11-10, so the local Supabase stack cannot run here.
+- No Docker or WSL on this machine as of 2026-11-10, so the local Supabase stack cannot run here. Supabase CLI 3 targets the local stack by default: pass `--remote` for the linked project (the `db:*` scripts already do). The CLI labels the dev project "production"; that is just its wording for any hosted project.
+- Pushing migrations to the hosted database is blocked for Claude by the permission system; the owner runs `pnpm db:push` (add `--yes`).
 - pnpm enforces a minimum release age on dependencies. If install rejects a just-published package, pin an older version; do not relax the policy.
 - typescript is pinned to 6.0.x because typescript-eslint does not support 7 yet.
 - Supabase keys use the current names: publishable key (clients) and secret key (API only). Next.js 16 uses `proxy.ts`, not `middleware.ts`.

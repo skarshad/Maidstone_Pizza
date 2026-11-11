@@ -14,7 +14,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 pnpm check:secrets  # no server secrets in client code or the repo
 ```
 
-This machine has no Docker, so local development uses a cloud **dev** Supabase project instead of `supabase start`. The database tests (`pnpm db:test`) therefore run in CI, where Docker is available, or against the linked dev project.
+This machine has no Docker, so local development uses a cloud **dev** Supabase project instead of `supabase start`. The database tests therefore run in CI with `pnpm db:test` (needs Docker), or here against the linked dev project with `pnpm db:test:remote`, which rolls everything back and leaves no data behind.
 
 ## 2. Supabase
 
@@ -23,7 +23,7 @@ Create three projects, all in **West Europe (London) `eu-west-2`**: `maidstone-p
 For each project:
 
 1. `supabase login`, then `supabase link --project-ref <ref>`.
-2. `supabase db push` applies everything in `supabase/migrations`.
+2. `pnpm db:push` (`supabase db push --remote`) applies everything in `supabase/migrations`.
 3. Enable the token hook: Dashboard > Authentication > Hooks > Custom Access Token > choose `public.custom_access_token_hook`. Without this, nobody gets a staff role in their token.
 4. `pnpm db:types` regenerates `packages/types/src/database.ts`.
 5. Auth providers and redirect URLs: see `docs/AUTH_SETUP.md`.

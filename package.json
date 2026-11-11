@@ -16,8 +16,9 @@
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
-    "db:push": "supabase db push",
-    "db:types": "supabase gen types typescript --linked --schema public > packages/types/src/database.ts"
+    "db:test:remote": "node scripts/db-test-remote.mjs",
+    "db:push": "supabase db push --remote",
+    "db:types": "supabase gen types typescript --remote --schema public > packages/types/src/database.ts"
   },
   "devDependencies": {
     "prettier": "^3.9.10",
