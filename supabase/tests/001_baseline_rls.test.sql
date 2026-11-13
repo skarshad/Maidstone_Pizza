@@ -4,6 +4,8 @@ create extension if not exists pgtap with schema extensions;
 select plan(24);
 
 -- ---- fixtures -------------------------------------------------------------
+-- The database may already hold real accounts, so counts below only look at
+-- these fixture rows (ids ending 000a to 000e).
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'alice@example.test'),
   ('00000000-0000-0000-0000-00000000000b', 'bob@example.test'),
@@ -27,7 +29,7 @@ select is(
 );
 
 select is(
-  (select count(*)::int from public.profiles),
+  (select count(*)::int from public.profiles where id::text like '00000000-0000-0000-0000-00000000000_'),
   5,
   'a profile row is created for each new auth user'
 );
@@ -113,7 +115,11 @@ select is((select count(*)::int from public.audit_log), 0, 'kitchen cannot see t
 reset role;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000d","role":"authenticated","user_role":"manager"}';
 set local role authenticated;
-select is((select count(*)::int from public.profiles), 5, 'manager sees all profiles');
+select is(
+  (select count(*)::int from public.profiles where id::text like '00000000-0000-0000-0000-00000000000_'),
+  5,
+  'manager sees all profiles'
+);
 select is((select count(*)::int from public.customer_flags), 1, 'manager sees customer flags');
 select cmp_ok((select count(*)::int from public.audit_log), '>=', 4, 'role and flag changes were audited');
 
@@ -121,7 +127,11 @@ select cmp_ok((select count(*)::int from public.audit_log), '>=', 4, 'role and f
 reset role;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000e","role":"authenticated","user_role":"admin"}';
 set local role authenticated;
-select is((select count(*)::int from public.user_roles), 3, 'admin sees all staff roles');
+select is(
+  (select count(*)::int from public.user_roles where user_id::text like '00000000-0000-0000-0000-00000000000_'),
+  3,
+  'admin sees all staff roles'
+);
 
 select * from finish();
 rollback;
