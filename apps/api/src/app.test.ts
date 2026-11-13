@@ -3,6 +3,7 @@ import type { Role } from '@mp/types';
 import { createApp } from './app';
 import { requireRole } from './auth';
 import type { Deps } from './deps';
+import { fakeMenuStore } from './menu-fixtures';
 
 function makeApp(overrides: Partial<Deps> = {}) {
   const deps: Deps = {
@@ -13,12 +14,12 @@ function makeApp(overrides: Partial<Deps> = {}) {
       return role ? { id: `user-${role}`, email: `${role}@example.test`, role } : null;
     },
     pingDatabase: async () => true,
+    menu: fakeMenuStore(),
     ...overrides,
   };
   const app = createApp(() => deps);
   // Stand-ins for routes that arrive in later phases, to prove the gates hold.
   app.get('/v1/kitchen/orders', (c) => c.json({ ok: true }));
-  app.get('/v1/admin/menu', (c) => c.json({ ok: true }));
   return app;
 }
 
@@ -100,7 +101,9 @@ describe('platform', () => {
   it('serves an OpenAPI document covering the routes', async () => {
     const res = await makeApp().request('/openapi.json');
     const doc = (await res.json()) as { paths: Record<string, unknown> };
-    expect(Object.keys(doc.paths)).toEqual(expect.arrayContaining(['/v1/health', '/v1/me']));
+    expect(Object.keys(doc.paths)).toEqual(
+      expect.arrayContaining(['/v1/health', '/v1/me', '/v1/menu', '/v1/admin/menu/items/{id}']),
+    );
   });
 
   it('returns a JSON 404 without leaking internals', async () => {

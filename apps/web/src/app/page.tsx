@@ -2,8 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Sunburst, buttonClasses } from '@mp/ui';
 
-// Phase 1 landing page. Promotions, popular items, postcode check and opening
-// hours arrive with the menu (Phase 2) and checkout (Phase 3).
+// Landing page. Promotions, popular items, postcode check and opening hours
+// arrive with checkout (Phase 3) and promotions (Phase 5).
 export default function HomePage() {
   return (
     <section className="relative overflow-hidden">
@@ -28,11 +28,11 @@ export default function HomePage() {
           ordering opens soon.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/login" className={buttonClasses('primary', 'lg')}>
-            Create an account
+          <Link href="/menu" className={buttonClasses('primary', 'lg')}>
+            See the menu
           </Link>
-          <Link href="/design" className={buttonClasses('outline', 'lg')}>
-            Design system
+          <Link href="/login" className={buttonClasses('outline', 'lg')}>
+            Create an account
           </Link>
         </div>
       </div>

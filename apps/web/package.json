@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@mp/api-client": "workspace:*",
+    "@mp/pricing": "workspace:*",
     "@mp/types": "workspace:*",
     "@mp/ui": "workspace:*",
     "@mp/validation": "workspace:*",

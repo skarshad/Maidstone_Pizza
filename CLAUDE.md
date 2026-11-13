@@ -2,7 +2,7 @@
 
 Ordering platform for a pizza takeaway in Maidstone, Kent: customer web, admin, kitchen display, API, iOS/Android. Full design in `docs/ARCHITECTURE.md`. Read it before making structural changes.
 
-**Current state (2026-11-11):** Phase 1 code complete and committed. Dev Supabase project `maidstone-pizza-dev` is linked, the baseline migration is applied and the 24 policy tests pass against it. Still open, on the owner: enable the Custom Access Token hook in the dashboard, auth providers, Git remote, first Vercel preview deploy, and whether dev stays in Ireland (`eu-west-1`, created there by mistake; staging and production must be London). Sign-in not yet tested end to end. Next: Phase 2 (menu import). Update this line at the end of every phase.
+**Current state (2026-11-13):** Phase 2 (menu) code complete: importer, seed, menu tables + RLS + tests, menu API, customer menu pages, admin menu management. The menu migration `20261113090000_menu.sql` passes its tests in a rolled-back dry run but is NOT yet pushed, and the menu is not yet seeded; the owner runs `pnpm db:push --yes`, then `pnpm menu:seed`. Open items for the owner are listed in `docs/MENU_IMPORT_NOTES.md` (allergens are the launch blocker). Dev Supabase project is in Ireland (`eu-west-1`); staging and production must be London. Still open from Phase 1: Git remote, Vercel preview deploy. Next: Phase 3 (basket and checkout). Update this line at the end of every phase.
 
 ## Fixed decisions (ask before changing)
 
@@ -47,10 +47,14 @@ pnpm db:push              apply migrations to the linked Supabase project
 pnpm db:test              pgTAP RLS and state-machine tests (needs Docker; used in CI)
 pnpm db:test:remote       same tests against the linked dev project, no Docker; always rolled back
 pnpm db:types             regenerate packages/types from the database
+pnpm db:test:remote --pending   dry-run unpushed migrations plus all tests, rolled back
 pnpm brand:assets         generate icons, splash, OG image from the logo
+pnpm menu:import          capture the source menu into data/menu.source.json
+pnpm menu:build           build data/menu.seed.json from the capture and data/menu.overrides.json
+pnpm menu:seed            load the seed into the database (adds missing rows only; --overwrite, --dry-run)
 ```
 
-Planned: `pnpm test:e2e` (Phase 3), `pnpm menu:import` / `pnpm menu:seed` (Phase 2), `pnpm simulate:order` (Phase 7).
+Planned: `pnpm test:e2e` (Phase 3), `pnpm simulate:order` (Phase 7).
 
 Builds and `next dev` need the four `NEXT_PUBLIC_*` variables set (placeholders are fine for a build; see `.github/workflows/ci.yml`).
 
@@ -74,4 +78,8 @@ Lint, typecheck and tests green → docs updated → commit → short summary to
 - typescript is pinned to 6.0.x because typescript-eslint does not support 7 yet.
 - Supabase keys use the current names: publishable key (clients) and secret key (API only). Next.js 16 uses `proxy.ts`, not `middleware.ts`.
 - Roles live in `public.user_roles`; the custom access token hook copies them into the `user_role` JWT claim. `packages/web-auth` holds the shared Next.js session and role-gate code.
+- Menu: allergens are never guessed. Items carry `allergens_confirmed`; while false, the site says so and points the customer to the shop. Staff menu writes go through the API acting as the signed-in user (their token, not the secret key), so RLS and the audit log apply.
+- Supabase grants anon and authenticated full table rights by default: every new table must `revoke all` first, then grant back what is needed.
+- Database tests must not assume an empty database; count only fixture rows.
+- Large multi-file bash heredocs fail on this machine; use the Write tool per file.
 - Never stop servers with a blanket `taskkill node.exe`; run them as background tasks and stop that task.

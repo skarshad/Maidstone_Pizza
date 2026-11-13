@@ -1,3 +1,12 @@
+import type {
+  AdminMenu,
+  CategoryPatchInput,
+  ItemAvailabilityInput,
+  Menu,
+  SaveMenuItemInput,
+  SaveMenuOptionInput,
+} from '@mp/validation';
+
 export interface ApiClientOptions {
   baseUrl: string;
   /** Returns the current Supabase access token, if signed in. */
@@ -52,9 +61,30 @@ export function createApiClient(options: ApiClientOptions) {
     return (await res.json()) as T;
   }
 
+  const send = (method: string, body: unknown): RequestInit => ({
+    method,
+    body: JSON.stringify(body),
+  });
+
   return {
     health: () => request<HealthResponse>('/v1/health'),
     me: () => request<MeResponse>('/v1/me'),
+    menu: () => request<Menu>('/v1/menu'),
+    admin: {
+      menu: () => request<AdminMenu>('/v1/admin/menu', { cache: 'no-store' }),
+      createItem: (input: SaveMenuItemInput) =>
+        request<{ id: string }>('/v1/admin/menu/items', send('POST', input)),
+      updateItem: (id: string, input: SaveMenuItemInput) =>
+        request<{ id: string }>(`/v1/admin/menu/items/${id}`, send('PUT', input)),
+      setItemAvailability: (id: string, input: ItemAvailabilityInput) =>
+        request<{ ok: true }>(`/v1/admin/menu/items/${id}/availability`, send('PATCH', input)),
+      deleteItem: (id: string) =>
+        request<{ ok: true }>(`/v1/admin/menu/items/${id}`, { method: 'DELETE' }),
+      saveOption: (id: string, input: SaveMenuOptionInput) =>
+        request<{ ok: true }>(`/v1/admin/menu/options/${id}`, send('PUT', input)),
+      updateCategory: (id: string, input: CategoryPatchInput) =>
+        request<{ ok: true }>(`/v1/admin/menu/categories/${id}`, send('PATCH', input)),
+    },
   };
 }
 export type ApiClient = ReturnType<typeof createApiClient>;

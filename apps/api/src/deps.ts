@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { isRole, type Role } from '@mp/types';
 import { parseEnv, serverEnvSchema, type ServerEnv } from '@mp/validation';
+import { createMenuStore, type MenuStore } from './menu-store';
 
 export interface AuthUser {
   id: string;
@@ -15,6 +16,7 @@ export interface Deps {
   verifyToken(token: string): Promise<AuthUser | null>;
   /** True when the database answers a trivial query. */
   pingDatabase(): Promise<boolean>;
+  menu: MenuStore;
 }
 
 export function loadEnv(): ServerEnv {
@@ -23,13 +25,19 @@ export function loadEnv(): ServerEnv {
 
 export function createDeps(env: ServerEnv = loadEnv()): Deps {
   const noSession = { auth: { persistSession: false, autoRefreshToken: false } };
-  // Publishable-key client: only used to verify tokens against the project's signing keys.
+  // Publishable-key client: verifies tokens and reads public data as a signed-out visitor.
   const authClient = createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, noSession);
   // Secret-key client: bypasses RLS. Must never leave this service.
   const admin = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, noSession);
 
   return {
     corsOrigins: env.CORS_ORIGINS,
+
+    menu: createMenuStore({
+      supabaseUrl: env.SUPABASE_URL,
+      publishableKey: env.SUPABASE_PUBLISHABLE_KEY,
+      anon: authClient,
+    }),
 
     async verifyToken(token) {
       const { data, error } = await authClient.auth.getClaims(token);

@@ -18,7 +18,10 @@ export function SiteHeader() {
           />
           <span className="font-display text-xl font-black leading-none">Maidstone Pizza</span>
         </Link>
-        <nav aria-label="Main">
+        <nav aria-label="Main" className="flex items-center gap-2">
+          <Link href="/menu" className={buttonClasses('ghost')}>
+            Menu
+          </Link>
           <Link href="/account" className={buttonClasses('outline')}>
             Account
           </Link>
@@ -37,8 +40,8 @@ export function SiteFooter() {
         {/* TODO(client): real address, phone, company number and opening hours before launch. */}
         <p className="mt-2 text-cream-200">Maidstone, Kent</p>
         <p className="mt-6 text-cream-300">
-          Food allergies? Please contact us before ordering. Full allergen information is coming
-          with the menu.
+          Food allergies? Please contact us before ordering. Allergen information is shown on each
+          menu item once it has been confirmed.
         </p>
       </div>
     </footer>

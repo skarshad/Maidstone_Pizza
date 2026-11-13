@@ -5,6 +5,7 @@ import { secureHeaders } from 'hono/secure-headers';
 import { ROLES } from '@mp/types';
 import { authenticate, errorBody, requireRole, type AppEnv } from './auth';
 import type { Deps } from './deps';
+import { registerMenuRoutes } from './routes/menu';
 
 const ErrorSchema = z
   .object({ error: z.object({ code: z.string(), message: z.string() }) })
@@ -47,7 +48,15 @@ const meRoute = createRoute({
 
 /** Builds the API. `getDeps` is lazy so a bad env fails requests, not module load. */
 export function createApp(getDeps: () => Deps) {
-  const app = new OpenAPIHono<AppEnv>();
+  const app = new OpenAPIHono<AppEnv>({
+    // Request bodies and params that fail their schema.
+    defaultHook: (result, c) => {
+      if (result.success) return;
+      const first = result.error.issues[0];
+      const where = first?.path.length ? first.path.join('.') + ': ' : '';
+      return c.json(errorBody('invalid', where + (first?.message ?? 'Invalid request.')), 400);
+    },
+  });
   let deps: Deps | undefined;
 
   app.use('*', secureHeaders());
@@ -93,6 +102,8 @@ export function createApp(getDeps: () => Deps) {
     return c.json({ id: user.id, email: user.email, role: user.role }, 200);
   });
 
+  registerMenuRoutes(app);
+
   app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
     type: 'http',
     scheme: 'bearer',
@@ -101,7 +112,7 @@ export function createApp(getDeps: () => Deps) {
   });
   app.doc('/openapi.json', {
     openapi: '3.0.0',
-    info: { title: 'Maidstone Pizza API', version: '0.1.0' },
+    info: { title: 'Maidstone Pizza API', version: '0.2.0' },
   });
   app.get('/docs', swaggerUI({ url: '/openapi.json' }));
 

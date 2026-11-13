@@ -16,3 +16,6 @@ supabase/.branches/
 .env*.local
 next-env.d.ts
 *.tsbuildinfo
+
+# menu importer page cache
+.cache/

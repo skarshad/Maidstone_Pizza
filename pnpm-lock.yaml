@@ -184,6 +184,9 @@ importers:
       '@mp/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@mp/pricing':
+        specifier: workspace:*
+        version: link:../../packages/pricing
       '@mp/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -352,6 +355,9 @@ importers:
       '@mp/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@mp/pricing':
+        specifier: workspace:*
+        version: link:../../packages/pricing
       '@mp/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -409,6 +415,10 @@ importers:
         version: 5.1.0(@types/node@24.19.2)(vite@8.3.7(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/api-client:
+    dependencies:
+      '@mp/validation':
+        specifier: workspace:*
+        version: link:../validation
     devDependencies:
       '@mp/config':
         specifier: workspace:*

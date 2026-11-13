@@ -1,0 +1,58 @@
+{
+  "note": "Owner-editable decisions applied on top of data/menu.source.json by pnpm menu:build. Every entry here is explained in docs/MENU_IMPORT_NOTES.md.",
+  "rename": {
+    "GoGo Special": {
+      "name": "Maidstone Special",
+      "reason": "Carries the source brand's name."
+    }
+  },
+  "description": {
+    "Flaming Torch": "Pepperoni, Tandoori Chicken, Onion, Jalapeno Peppers, Green Chillies, Garlic Sauce",
+    "New Yorker": "American Hotdog, BBQ Sauce, Melted Cheese & Fried Onions.",
+    "Mexican Passion": "Mexican chicken, red peppers, pineapple and Jalapeno.",
+    "Create Your Own": "Cheese & Tomato plus any 4 toppings of your choice."
+  },
+  "exclude": [],
+  "tag_map": {
+    "Vegetarian": "vegetarian",
+    "Hot": "spicy"
+  },
+  "create_your_own": {
+    "source_name": "Create Your Own",
+    "free_toppings": 4
+  },
+  "extra_toppings_beyond_recipe": 2,
+  "toppings": {
+    "note": "The source only lists toppings after a store is chosen, so this list is derived from the ingredients named in the pizza descriptions. Confirm with the owner.",
+    "names": [
+      "Extra Cheese",
+      "Pepperoni",
+      "Ham",
+      "Bacon",
+      "Beef",
+      "Spicy Beef",
+      "Chicken",
+      "Tandoori Chicken",
+      "Chinese Chicken",
+      "Mexican Chicken",
+      "Sausage",
+      "Garlic Sausage",
+      "Salami",
+      "Meatballs",
+      "Hot Dog",
+      "Tuna",
+      "Mushrooms",
+      "Onions",
+      "Fried Onions",
+      "Green Peppers",
+      "Red Peppers",
+      "Sweetcorn",
+      "Pineapple",
+      "Fresh Tomato",
+      "Jalapeno Peppers",
+      "Green Chillies",
+      "Fresh Garlic"
+    ]
+  },
+  "third_party_brands": ["Ben & Jerry's", "Haagen Dazs", "Coke", "Coca Cola", "7UP", "Fanta"]
+}

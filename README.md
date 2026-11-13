@@ -2,7 +2,7 @@
 
 Ordering platform for a pizza takeaway in Maidstone, Kent: customer website, admin portal, kitchen display and API, with iOS and Android apps to follow.
 
-**Status:** Phase 1 (foundation) is built. You can run the apps, sign in and see the brand and layout. The menu, basket and checkout come in later phases.
+**Status:** Phases 1 and 2 are built: sign-in, the menu with sizes, bases and toppings, and menu management in the admin portal. Basket and checkout come next (Phase 3).
 
 ## Run it locally
 
@@ -44,6 +44,7 @@ Leave that window open, then visit:
 | What                                     | Address                         |
 | ---------------------------------------- | ------------------------------- |
 | Customer website                         | http://localhost:3000           |
+| Menu                                     | http://localhost:3000/menu      |
 | Design preview (colours, fonts, buttons) | http://localhost:3000/design    |
 | Sign in or create an account             | http://localhost:3000/login     |
 | Admin portal                             | http://localhost:3001           |
@@ -58,6 +59,19 @@ To run one app on its own:
 ```
 pnpm --filter @mp/web dev        # or @mp/admin, @mp/kitchen, @mp/api
 ```
+
+## Loading the menu
+
+The menu lives in the database. To set it up on a new or empty project:
+
+```
+pnpm db:push --yes     # create the menu tables (once per new migration)
+pnpm menu:seed         # load the menu from data/menu.seed.json
+```
+
+`pnpm menu:seed` is safe to run again: it only adds what is missing and keeps any prices or names changed in the admin portal. See `docs/MENU_IMPORT_NOTES.md` for where the menu came from and what still needs the owner to confirm (allergens above all).
+
+Manage the menu at http://localhost:3001/menu once you have an admin account.
 
 ## Signing in to admin and kitchen
 
@@ -88,13 +102,16 @@ pnpm lint | typecheck | test | build     checks
 pnpm check:secrets                       fail if a secret is in the repo or client code
 pnpm db:push                             apply new migrations to the linked Supabase project
 pnpm db:test:remote                      run the access-policy tests against the dev project
+pnpm db:test:remote --pending            check a new migration before pushing it (nothing is kept)
 pnpm db:types                            regenerate database types
+pnpm menu:seed                           load the menu into the database
 pnpm brand:assets                        regenerate icons and images from the logo
 ```
 
 ## More detail
 
 - `docs/ARCHITECTURE.md`: how the system is designed and the build phases
+- `docs/MENU_IMPORT_NOTES.md`: menu source, changes made, and decisions needed from the owner
 - `docs/DEPLOYMENT.md`: Supabase, Vercel and environment setup
 - `docs/AUTH_SETUP.md`: sign-in providers (Google, Apple, Facebook, email)
 - `CLAUDE.md`: project rules and current state

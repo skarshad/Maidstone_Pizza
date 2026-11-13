@@ -18,7 +18,10 @@
     "db:test": "supabase test db",
     "db:test:remote": "node scripts/db-test-remote.mjs",
     "db:push": "supabase db push --remote",
-    "db:types": "supabase gen types typescript --remote --schema public > packages/types/src/database.ts"
+    "db:types": "supabase gen types typescript --remote --schema public > packages/types/src/database.ts",
+    "menu:import": "node scripts/menu-import.mjs",
+    "menu:build": "node scripts/menu-build-seed.mjs",
+    "menu:seed": "pnpm --filter @mp/api seed:menu"
   },
   "devDependencies": {
     "prettier": "^3.9.10",

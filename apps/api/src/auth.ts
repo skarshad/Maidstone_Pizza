@@ -2,7 +2,14 @@ import { createMiddleware } from 'hono/factory';
 import { hasRole, type Role } from '@mp/types';
 import type { AuthUser, Deps } from './deps';
 
-export type AppEnv = { Variables: { user: AuthUser | null; deps: Deps } };
+export type AppEnv = {
+  Variables: {
+    user: AuthUser | null;
+    /** The verified access token, kept so the API can act as this user in the database. */
+    token: string | null;
+    deps: Deps;
+  };
+};
 
 export function errorBody(code: string, message: string) {
   return { error: { code, message } };
@@ -12,7 +19,9 @@ export function errorBody(code: string, message: string) {
 export const authenticate = createMiddleware<AppEnv>(async (c, next) => {
   const header = c.req.header('Authorization');
   const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : null;
-  c.set('user', token ? await c.get('deps').verifyToken(token) : null);
+  const user = token ? await c.get('deps').verifyToken(token) : null;
+  c.set('user', user);
+  c.set('token', user ? token : null);
   await next();
 });
 
