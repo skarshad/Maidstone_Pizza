@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      allergens: {
+        Row: {
+          code: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -53,6 +71,39 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_published: boolean
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_published?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_published?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_flags: {
         Row: {
           internal_notes: string | null
@@ -76,6 +127,347 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      dietary_tags: {
+        Row: {
+          code: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      item_allergens: {
+        Row: {
+          allergen_code: string
+          item_id: string
+          may_contain: boolean
+        }
+        Insert: {
+          allergen_code: string
+          item_id: string
+          may_contain?: boolean
+        }
+        Update: {
+          allergen_code?: string
+          item_id?: string
+          may_contain?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_allergens_allergen_code_fkey"
+            columns: ["allergen_code"]
+            isOneToOne: false
+            referencedRelation: "allergens"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "item_allergens_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_dietary_tags: {
+        Row: {
+          item_id: string
+          tag_code: string
+        }
+        Insert: {
+          item_id: string
+          tag_code: string
+        }
+        Update: {
+          item_id?: string
+          tag_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_dietary_tags_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_dietary_tags_tag_code_fkey"
+            columns: ["tag_code"]
+            isOneToOne: false
+            referencedRelation: "dietary_tags"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      item_option_groups: {
+        Row: {
+          free_select: number
+          group_id: string
+          item_id: string
+          max_select: number | null
+          sort_order: number
+        }
+        Insert: {
+          free_select?: number
+          group_id: string
+          item_id: string
+          max_select?: number | null
+          sort_order?: number
+        }
+        Update: {
+          free_select?: number
+          group_id?: string
+          item_id?: string
+          max_select?: number | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_option_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "option_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_option_groups_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_variants: {
+        Row: {
+          id: string
+          item_id: string
+          name: string
+          price_pence: number
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          name: string
+          price_pence: number
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          name?: string
+          price_pence?: number
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_variants_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          allergens_confirmed: boolean
+          category_id: string
+          created_at: string
+          description: string
+          id: string
+          image_path: string | null
+          is_published: boolean
+          name: string
+          slug: string
+          sold_out_until: string | null
+          sort_order: number
+          source_ref: string | null
+          updated_at: string
+          vat_rate_bp: number
+        }
+        Insert: {
+          allergens_confirmed?: boolean
+          category_id: string
+          created_at?: string
+          description?: string
+          id?: string
+          image_path?: string | null
+          is_published?: boolean
+          name: string
+          slug: string
+          sold_out_until?: string | null
+          sort_order?: number
+          source_ref?: string | null
+          updated_at?: string
+          vat_rate_bp?: number
+        }
+        Update: {
+          allergens_confirmed?: boolean
+          category_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image_path?: string | null
+          is_published?: boolean
+          name?: string
+          slug?: string
+          sold_out_until?: string | null
+          sort_order?: number
+          source_ref?: string | null
+          updated_at?: string
+          vat_rate_bp?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      option_allergens: {
+        Row: {
+          allergen_code: string
+          may_contain: boolean
+          option_id: string
+        }
+        Insert: {
+          allergen_code: string
+          may_contain?: boolean
+          option_id: string
+        }
+        Update: {
+          allergen_code?: string
+          may_contain?: boolean
+          option_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "option_allergens_allergen_code_fkey"
+            columns: ["allergen_code"]
+            isOneToOne: false
+            referencedRelation: "allergens"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "option_allergens_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      option_groups: {
+        Row: {
+          id: string
+          max_select: number | null
+          min_select: number
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          max_select?: number | null
+          min_select?: number
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          max_select?: number | null
+          min_select?: number
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      option_prices: {
+        Row: {
+          option_id: string
+          price_pence: number
+          variant_slug: string
+        }
+        Insert: {
+          option_id: string
+          price_pence: number
+          variant_slug: string
+        }
+        Update: {
+          option_id?: string
+          price_pence?: number
+          variant_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "option_prices_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      options: {
+        Row: {
+          group_id: string
+          id: string
+          is_published: boolean
+          name: string
+          price_pence: number
+          slug: string
+          sold_out_until: string | null
+          sort_order: number
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          is_published?: boolean
+          name: string
+          price_pence?: number
+          slug: string
+          sold_out_until?: string | null
+          sort_order?: number
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          is_published?: boolean
+          name?: string
+          price_pence?: number
+          slug?: string
+          sold_out_until?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "option_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -145,6 +537,8 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      save_menu_item: { Args: { p: Json }; Returns: string }
+      save_menu_option: { Args: { p: Json }; Returns: string }
     }
     Enums: {
       app_role: "customer" | "kitchen" | "manager" | "admin"
