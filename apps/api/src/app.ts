@@ -6,6 +6,7 @@ import { ROLES } from '@mp/types';
 import { authenticate, errorBody, requireRole, type AppEnv } from './auth';
 import type { Deps } from './deps';
 import { registerMenuRoutes } from './routes/menu';
+import { registerKitchenRoutes } from './routes/kitchen';
 import { registerOrderRoutes } from './routes/orders';
 
 const ErrorSchema = z
@@ -105,6 +106,7 @@ export function createApp(getDeps: () => Deps) {
 
   registerMenuRoutes(app);
   registerOrderRoutes(app);
+  registerKitchenRoutes(app);
 
   app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
     type: 'http',
@@ -114,7 +116,7 @@ export function createApp(getDeps: () => Deps) {
   });
   app.doc('/openapi.json', {
     openapi: '3.0.0',
-    info: { title: 'Maidstone Pizza API', version: '0.3.0' },
+    info: { title: 'Maidstone Pizza API', version: '0.4.0' },
   });
   app.get('/docs', swaggerUI({ url: '/openapi.json' }));
 

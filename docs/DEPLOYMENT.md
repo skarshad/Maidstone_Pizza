@@ -123,6 +123,13 @@ Repeat steps 2 to 4 with live-mode keys and a live-mode webhook endpoint on the 
 
 Order confirmations go through Resend when `RESEND_API_KEY` is set and `EMAIL_FROM` uses a domain verified in Resend. Without a key no email is sent; the API logs one line (recipient masked, no content) so the flow can still be tested.
 
+## 6b. Kitchen display
+
+- Runs as its own app (`apps/kitchen`). Use a tablet or monitor in a modern browser (Chrome or Edge recommended, for the screen wake-lock).
+- Instant updates use a private Supabase Realtime channel, `kitchen:orders`, that only staff can join. No setup is needed beyond pushing the migrations. If Realtime is unavailable the screen keeps working by checking every 5 seconds.
+- Give kitchen staff the `kitchen` role (same SQL as the first admin in section 2, with `'kitchen'` instead of `'admin'`). They can use the kitchen display but not the admin portal.
+- Ticket printing is not connected. The API has a `TicketPrinter` interface (`apps/api/src/kitchen.ts`) ready for an ESC/POS network printer or a print service once the shop has one.
+
 ## 7. Mobile: EAS build and submit — later (Phase 8)
 
 ## 8. Backups and restore — later (Phase 9)

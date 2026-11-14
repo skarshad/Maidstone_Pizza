@@ -18,6 +18,7 @@ import type {
 } from '@mp/validation';
 import type { AuthUser } from './deps';
 import { renderOrderConfirmation } from './emails/order-confirmation';
+import { renderOrderStatus, type NotifiedStatus } from './emails/order-status';
 import type { EmailSender } from './email';
 import type { OrderStore, ShopConfig } from './order-store';
 import type { PaymentProvider } from './payments';
@@ -343,7 +344,7 @@ export async function placeOrder(
 // ---- background work ----------------------------------------------------------
 
 /** Job kinds this service can do on its own. `payment_review` waits for staff (Phase 6). */
-export const AUTOMATIC_JOB_KINDS = ['order_confirmation_email'];
+export const AUTOMATIC_JOB_KINDS = ['order_confirmation_email', 'order_status_email'];
 
 /** Runs due jobs. Safe to call from several places at once: each job is claimed by one caller. */
 export async function processJobs(
@@ -369,6 +370,24 @@ export async function processJobs(
           to: order.customerEmail,
           ...email,
           idempotencyKey: `order-confirmation-${orderId}`,
+        });
+      }
+      if (job.kind === 'order_status_email') {
+        const orderId = String(job.payload.order_id);
+        const status = String(job.payload.status) as NotifiedStatus;
+        const order = await deps.orders.getOrder(orderId);
+        if (!order) throw new Error('order not found');
+        const config = await deps.orders.getShopConfig();
+        const email = renderOrderStatus(order.view, status, {
+          trackingUrl: trackingUrl(deps, orderId),
+          shopName: config.name,
+          timezone: config.timezone,
+          reason: typeof job.payload.reason === 'string' ? job.payload.reason : null,
+        });
+        await deps.email.send({
+          to: order.customerEmail,
+          ...email,
+          idempotencyKey: `order-status-${orderId}-${status}`,
         });
       }
       await deps.orders.finishJob(job.id, true, null);

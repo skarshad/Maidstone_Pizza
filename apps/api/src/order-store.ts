@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DayHours, ZoneRule } from '@mp/pricing';
-import type { OrderSummary, OrderView } from '@mp/validation';
+import type { KitchenOrder, OrderSummary, OrderView } from '@mp/validation';
 import type { PaymentEvent } from './payments';
 
 // Everything the order flow needs from the database. Faked in tests.
@@ -83,6 +83,30 @@ export interface Job {
   payload: Record<string, unknown>;
 }
 
+/** Who is making a change, for the order history. */
+export interface Actor {
+  id: string | null;
+  role: string;
+}
+
+/** A kitchen action that could not be applied. */
+export class OrderActionError extends Error {
+  readonly code: 'not_found' | 'invalid_transition' | 'invalid';
+
+  constructor(code: OrderActionError['code'], message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
+export const ACTIVE_KITCHEN_STATUSES = [
+  'RECEIVED',
+  'ACCEPTED',
+  'PREPARING',
+  'READY',
+  'OUT_FOR_DELIVERY',
+] as const;
+
 export type PaymentOutcome =
   | 'duplicate'
   | 'unknown_payment'
@@ -113,6 +137,21 @@ export interface OrderStore {
   /** Cancels unpaid orders past the time limit; returns payments to cancel with the provider. */
   expirePending(): Promise<Array<{ orderId: string; providerRef: string | null }>>;
   claimJobs(limit: number, kinds: string[]): Promise<Job[]>;
+  enqueueJob(kind: string, payload: Record<string, unknown>): Promise<void>;
+
+  // ---- kitchen ----
+  /** Every order the kitchen is working on, plus those finished since `finishedSince`. */
+  listKitchenOrders(finishedSince: Date): Promise<KitchenOrder[]>;
+  acceptOrder(orderId: string, prepMinutes: number, actor: Actor): Promise<void>;
+  rejectOrder(orderId: string, reason: string, actor: Actor): Promise<void>;
+  transitionOrder(
+    orderId: string,
+    to: OrderView['status'],
+    actor: Actor,
+    reason: string,
+  ): Promise<void>;
+  /** False when the item is not on that order. */
+  setItemDone(orderId: string, itemId: string, done: boolean): Promise<boolean>;
   finishJob(id: number, ok: boolean, error: string | null): Promise<void>;
 }
 
@@ -217,6 +256,101 @@ export function toOrderRecord(row: OrderRow): OrderRecord {
         .map((e) => ({ status: e.to_status, at: e.created_at })),
     },
   };
+}
+
+const KITCHEN_COLUMNS =
+  'id, order_number, status, channel, fulfilment, created_at, paid_at, scheduled_for, estimated_ready_at, ' +
+  'updated_at, customer_name, customer_phone, address, notes, reject_reason, ' +
+  'order_items(id, name, variant_name, quantity, notes, done_at, allergens, allergens_confirmed, sort_order, ' +
+  'order_item_options(group_name, name, sort_order))';
+
+interface KitchenRow {
+  id: string;
+  order_number: number;
+  status: KitchenOrder['status'];
+  channel: KitchenOrder['channel'];
+  fulfilment: KitchenOrder['fulfilment'];
+  created_at: string;
+  paid_at: string | null;
+  scheduled_for: string | null;
+  estimated_ready_at: string;
+  updated_at: string;
+  customer_name: string;
+  customer_phone: string;
+  address: { line1?: string; line2?: string; town?: string; postcode?: string } | null;
+  notes: string;
+  reject_reason: string | null;
+  order_items: Array<{
+    id: string;
+    name: string;
+    variant_name: string;
+    quantity: number;
+    notes: string;
+    done_at: string | null;
+    allergens: Array<{ code: string; mayContain: boolean }> | null;
+    allergens_confirmed: boolean;
+    sort_order: number;
+    order_item_options: Array<{ group_name: string; name: string; sort_order: number }>;
+  }>;
+}
+
+export function toKitchenOrder(row: KitchenRow): KitchenOrder {
+  return {
+    id: row.id,
+    orderNumber: row.order_number,
+    status: row.status,
+    channel: row.channel,
+    fulfilment: row.fulfilment,
+    createdAt: row.created_at,
+    paidAt: row.paid_at,
+    scheduledFor: row.scheduled_for,
+    estimatedReadyAt: row.estimated_ready_at,
+    updatedAt: row.updated_at,
+    customerName: row.customer_name,
+    customerPhone: row.customer_phone,
+    address: row.address
+      ? {
+          line1: row.address.line1 ?? '',
+          line2: row.address.line2 ?? '',
+          town: row.address.town ?? '',
+          postcode: row.address.postcode ?? '',
+        }
+      : null,
+    notes: row.notes,
+    rejectReason: row.reject_reason,
+    items: [...row.order_items]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        variantName: item.variant_name,
+        quantity: item.quantity,
+        notes: item.notes,
+        done: item.done_at !== null,
+        allergens: item.allergens ?? [],
+        allergensConfirmed: item.allergens_confirmed,
+        options: [...item.order_item_options]
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((o) => ({ groupName: o.group_name, name: o.name })),
+      })),
+  };
+}
+
+/** Maps the database's refusals of a kitchen action to something the API can report. */
+function actionError(error: { message: string; code?: string }): Error {
+  switch (error.code) {
+    case '23514':
+      return new OrderActionError(
+        'invalid_transition',
+        'That order has already moved on. The screen will refresh.',
+      );
+    case 'P0002':
+      return new OrderActionError('not_found', 'Order not found.');
+    case '22023':
+      return new OrderActionError('invalid', 'Those details are not valid.');
+    default:
+      return new Error(`database error ${error.code ?? ''}: ${error.message}`);
+  }
 }
 
 function check<T>(result: { data: T; error: { message: string; code?: string } | null }): T {
@@ -433,6 +567,65 @@ export function createOrderStore(admin: SupabaseClient): OrderStore {
         payload: Record<string, unknown>;
       }>;
       return (rows ?? []).map((r) => ({ id: r.id, kind: r.kind, payload: r.payload }));
+    },
+
+    async enqueueJob(kind, payload) {
+      check(await admin.from('jobs').insert({ kind, payload }));
+    },
+
+    async listKitchenOrders(finishedSince) {
+      const active = `status.in.(${ACTIVE_KITCHEN_STATUSES.join(',')})`;
+      const recent = `and(status.in.(COLLECTED,COMPLETED,REJECTED,CANCELLED,REFUNDED),updated_at.gte.${finishedSince.toISOString()},paid_at.not.is.null)`;
+      const rows = check(
+        await admin
+          .from('orders')
+          .select(KITCHEN_COLUMNS)
+          .or(`${active},${recent}`)
+          .order('estimated_ready_at', { ascending: true })
+          .limit(300),
+      );
+      return ((rows ?? []) as unknown as KitchenRow[]).map(toKitchenOrder);
+    },
+
+    async acceptOrder(orderId, prepMinutes, actor) {
+      const { error } = await admin.rpc('kitchen_accept_order', {
+        p_order_id: orderId,
+        p_prep_minutes: prepMinutes,
+        p_actor_id: actor.id,
+        p_actor_role: actor.role,
+      });
+      if (error) throw actionError(error);
+    },
+
+    async rejectOrder(orderId, reason, actor) {
+      const { error } = await admin.rpc('kitchen_reject_order', {
+        p_order_id: orderId,
+        p_reason: reason,
+        p_actor_id: actor.id,
+        p_actor_role: actor.role,
+      });
+      if (error) throw actionError(error);
+    },
+
+    async transitionOrder(orderId, to, actor, reason) {
+      const { error } = await admin.rpc('transition_order', {
+        p_order_id: orderId,
+        p_to: to,
+        p_actor_id: actor.id,
+        p_actor_role: actor.role,
+        p_reason: reason,
+      });
+      if (error) throw actionError(error);
+    },
+
+    async setItemDone(orderId, itemId, done) {
+      return check(
+        await admin.rpc('kitchen_set_item_done', {
+          p_order_id: orderId,
+          p_item_id: itemId,
+          p_done: done,
+        }),
+      ) as boolean;
     },
 
     async finishJob(id, ok, error) {

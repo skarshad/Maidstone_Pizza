@@ -252,3 +252,69 @@ export const orderSummarySchema = z.object({
   itemCount: z.number().int(),
 });
 export type OrderSummary = z.infer<typeof orderSummarySchema>;
+
+// ---- kitchen display -------------------------------------------------------
+
+export const orderChannelSchema = z.enum([
+  'web',
+  'app',
+  'phone',
+  'uber_eats',
+  'just_eat',
+  'deliveroo',
+]);
+
+export const kitchenOrderSchema = z.object({
+  id,
+  orderNumber: z.number().int(),
+  status: orderStatusSchema,
+  channel: orderChannelSchema,
+  fulfilment: fulfilmentSchema,
+  createdAt: z.string(),
+  paidAt: z.string().nullable(),
+  scheduledFor: z.string().nullable(),
+  /** When the order is due: the booked time, or the kitchen's estimate. */
+  estimatedReadyAt: z.string(),
+  updatedAt: z.string(),
+  customerName: z.string(),
+  customerPhone: z.string(),
+  address: z
+    .object({ line1: z.string(), line2: z.string(), town: z.string(), postcode: z.string() })
+    .nullable(),
+  notes: z.string(),
+  rejectReason: z.string().nullable(),
+  items: z.array(
+    z.object({
+      id,
+      name: z.string(),
+      variantName: z.string(),
+      quantity: z.number().int(),
+      notes: z.string(),
+      done: z.boolean(),
+      allergens: z.array(allergenRefSchema),
+      allergensConfirmed: z.boolean(),
+      options: z.array(z.object({ groupName: z.string(), name: z.string() })),
+    }),
+  ),
+});
+export type KitchenOrder = z.infer<typeof kitchenOrderSchema>;
+
+export const kitchenBoardSchema = z.object({
+  /** The server's clock, so every screen counts down from the same time. */
+  serverTime: z.string(),
+  orders: z.array(kitchenOrderSchema),
+});
+export type KitchenBoard = z.infer<typeof kitchenBoardSchema>;
+
+export const kitchenAcceptSchema = z.object({ prepMinutes: z.number().int().min(1).max(240) });
+export const kitchenRejectSchema = z.object({ reason: z.string().trim().min(3).max(200) });
+/** The moves kitchen staff make after accepting. */
+export const KITCHEN_NEXT_STATUSES = [
+  'PREPARING',
+  'READY',
+  'OUT_FOR_DELIVERY',
+  'COLLECTED',
+  'COMPLETED',
+] as const;
+export const kitchenStatusSchema = z.object({ to: z.enum(KITCHEN_NEXT_STATUSES) });
+export const kitchenItemDoneSchema = z.object({ done: z.boolean() });

@@ -42,6 +42,16 @@ export interface PaymentProvider {
   /** Best effort: stops an unpaid payment being completed later. */
   cancelPayment(ref: string): Promise<void>;
   /**
+   * Refunds a paid payment, in full or in part. Returns an event to apply
+   * straight away when the provider has no webhook of its own (the simulator);
+   * Stripe returns null and confirms through its charge.refunded webhook.
+   */
+  refundPayment(input: {
+    ref: string;
+    amountPence: number;
+    idempotencyKey: string;
+  }): Promise<PaymentEvent | null>;
+  /**
    * Verifies a webhook request and returns its event, or null for an event type
    * we do not act on. Throws WebhookSignatureError if it is not genuine.
    */
@@ -84,6 +94,11 @@ export function createStripeProvider(config: {
 
     async cancelPayment(ref) {
       await stripe.paymentIntents.cancel(ref);
+    },
+
+    async refundPayment({ ref, amountPence, idempotencyKey }) {
+      await stripe.refunds.create({ payment_intent: ref, amount: amountPence }, { idempotencyKey });
+      return null;
     },
 
     async parseWebhook(rawBody, signature) {
@@ -166,6 +181,12 @@ export function createSimulatorProvider(config: {
     },
 
     async cancelPayment() {},
+
+    async refundPayment({ ref, amountPence, idempotencyKey }) {
+      // Deterministic id: refunding twice with the same key is applied once.
+      const eventId = `evt_sim_refund_${createHmac('sha256', config.secret).update(idempotencyKey).digest('hex').slice(0, 24)}`;
+      return { eventId, type: 'charge.refunded', providerRef: ref, refundedPence: amountPence };
+    },
 
     signedWebhook(event, at = now()) {
       const body = JSON.stringify({ id: `evt_sim_${randomUUID()}`, ...event });

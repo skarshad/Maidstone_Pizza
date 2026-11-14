@@ -4,6 +4,7 @@ import type {
   CheckoutResult,
   DeliveryCheckResult,
   ItemAvailabilityInput,
+  KitchenBoard,
   Menu,
   OrderSummary,
   OrderView,
@@ -129,6 +130,27 @@ export function createApiClient(options: ApiClientOptions) {
         `/v1/dev/payments/${orderId}/simulate`,
         send('POST', { outcome }, { 'X-Order-Token': orderToken }),
       ),
+
+    /** Kitchen screen. Needs a kitchen, manager or admin token. */
+    kitchen: {
+      board: () => request<KitchenBoard>('/v1/kitchen/orders', { cache: 'no-store' }),
+      accept: (id: string, prepMinutes: number) =>
+        request<{ ok: true }>(`/v1/kitchen/orders/${id}/accept`, send('POST', { prepMinutes })),
+      reject: (id: string, reason: string) =>
+        request<{ ok: true; refund: 'done' | 'pending' | 'needs_review' | 'none' }>(
+          `/v1/kitchen/orders/${id}/reject`,
+          send('POST', { reason }),
+        ),
+      setStatus: (
+        id: string,
+        to: 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'COLLECTED' | 'COMPLETED',
+      ) => request<{ ok: true }>(`/v1/kitchen/orders/${id}/status`, send('POST', { to })),
+      setItemDone: (id: string, itemId: string, done: boolean) =>
+        request<{ ok: true }>(
+          `/v1/kitchen/orders/${id}/items/${itemId}/done`,
+          send('POST', { done }),
+        ),
+    },
 
     admin: {
       menu: () => request<AdminMenu>('/v1/admin/menu', { cache: 'no-store' }),

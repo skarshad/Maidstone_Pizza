@@ -2,7 +2,7 @@
 
 Ordering platform for a pizza takeaway in Maidstone, Kent: customer website, admin portal, kitchen display and API, with iOS and Android apps to follow.
 
-**Status:** Phases 1 to 3 are built: sign-in, the menu, menu management in the admin portal, and ordering (basket, checkout, payment and order tracking). The kitchen display comes next (Phase 4).
+**Status:** Phases 1 to 4 are built: sign-in, the menu and its admin screens, ordering (basket, checkout, payment, tracking) and the kitchen display. Promotions come next (Phase 5).
 
 ## Run it locally
 
@@ -84,6 +84,17 @@ No Stripe account is needed to try ordering. `apps/api/.env.local` has `PAYMENTS
 4. Press **Continue to payment**, then **Simulate paying**. The page moves to "We have your order".
 
 The shop's placeholder hours are 4pm to 11pm. Outside those hours you can still order by choosing a later time. No confirmation email is sent until an email provider is connected; the API window logs a line instead. Connecting real Stripe is covered in `docs/DEPLOYMENT.md`, section 6.
+
+## Using the kitchen display
+
+Open http://localhost:3002 and sign in with a kitchen, manager or admin account.
+
+1. Press **Enable sound** once after the page loads. Browsers only allow sound after a tap, so this is needed each time the screen is opened.
+2. Place a test order from the website (see above). It appears under **New** within a few seconds and the alarm repeats until it is accepted.
+3. Tap a time under "Accept, ready in" to accept, or **Reject** and a reason. Rejecting refunds the customer automatically.
+4. Tap items to tick them off, then **Ready**, then **Collected** or **Out for delivery** and **Delivered**.
+
+The badge at the top shows **LIVE** when instant updates are connected. If it shows **CHECKING EVERY 5s** the screen is still working, just a few seconds slower. A red **OFFLINE** bar means it cannot reach the server and new orders are not showing; check the internet connection. **History** shows tickets finished in the last three hours.
 
 ## Signing in to admin and kitchen
 

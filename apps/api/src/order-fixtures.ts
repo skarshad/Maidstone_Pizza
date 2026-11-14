@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import type { Menu, OrderView } from '@mp/validation';
+import { canTransition } from '@mp/types';
+import type { KitchenOrder, Menu, OrderView } from '@mp/validation';
 import type { OrderDeps } from './checkout';
 import type { EmailMessage } from './email';
 import { assemblePublicMenu } from './menu-assemble';
@@ -13,6 +14,7 @@ import type {
   PaymentRecord,
   ShopConfig,
 } from './order-store';
+import { ACTIVE_KITCHEN_STATUSES, OrderActionError } from './order-store';
 import { createSimulatorProvider, type PaymentEvent, type PaymentProvider } from './payments';
 
 // In-memory stand-ins for the database, payments and email. Not used at runtime.
@@ -78,6 +80,10 @@ export const SPECIAL_LINE = {
 };
 export const SPECIAL_LINE_TOTAL = 1899 + 50;
 
+/** A stable id for the nth item of an order in the fake store. */
+export const itemId = (orderNumber: number, index: number) =>
+  `66666666-6666-4666-8666-${String(orderNumber * 100 + index).padStart(12, '0')}`;
+
 interface StoredOrder {
   id: string;
   orderNumber: number;
@@ -85,7 +91,11 @@ interface StoredOrder {
   createdAt: Date;
   paidAt: Date | null;
   input: NewOrder;
-  events: Array<{ status: OrderView['status']; at: string }>;
+  events: Array<{ status: OrderView['status']; at: string; actor?: string }>;
+  estimatedReadyAt: string;
+  updatedAt: Date;
+  rejectReason: string | null;
+  doneItems: Set<number>;
 }
 
 export interface FakeOrders {
@@ -120,9 +130,20 @@ export function fakeOrderDeps(
   let nextNumber = 1001;
   let nextJob = 1;
 
-  const move = (order: StoredOrder, status: OrderView['status']) => {
+  const move = (order: StoredOrder, status: OrderView['status'], actor?: string) => {
     order.status = status;
-    order.events.push({ status, at: now.toISOString() });
+    order.updatedAt = now;
+    order.events.push({ status, at: now.toISOString(), actor });
+  };
+
+  /** Mirrors the database guard: only moves the state machine allows. */
+  const guarded = (orderId: string, to: OrderView['status']): StoredOrder => {
+    const order = orders.get(orderId);
+    if (!order) throw new OrderActionError('not_found', 'Order not found.');
+    if (!canTransition(order.status, to, order.input.fulfilment)) {
+      throw new OrderActionError('invalid_transition', 'That order has already moved on.');
+    }
+    return order;
   };
 
   const toRecord = (order: StoredOrder): OrderRecord => ({
@@ -135,7 +156,7 @@ export function fakeOrderDeps(
       fulfilment: order.input.fulfilment,
       createdAt: order.createdAt.toISOString(),
       scheduledFor: order.input.scheduledFor,
-      estimatedReadyAt: order.input.estimatedReadyAt,
+      estimatedReadyAt: order.estimatedReadyAt,
       paidAt: order.paidAt?.toISOString() ?? null,
       customerName: order.input.customerName,
       address: order.input.address,
@@ -154,7 +175,7 @@ export function fakeOrderDeps(
       tipPence: order.input.tipPence,
       vatPence: order.input.vatPence,
       totalPence: order.input.totalPence,
-      timeline: order.events,
+      timeline: order.events.map(({ status, at }) => ({ status, at })),
     },
   });
 
@@ -175,6 +196,10 @@ export function fakeOrderDeps(
         paidAt: null,
         input,
         events: [{ status: 'PENDING_PAYMENT', at: now.toISOString() }],
+        estimatedReadyAt: input.estimatedReadyAt,
+        updatedAt: now,
+        rejectReason: null,
+        doneItems: new Set(),
       };
       orders.set(order.id, order);
       byKey.set(input.idempotencyKey, order.id);
@@ -238,6 +263,11 @@ export function fakeOrderDeps(
         });
         return 'paid';
       }
+      if (event.type === 'charge.refunded') {
+        payment.status = 'refunded';
+        if (canTransition(order.status, 'REFUNDED')) move(order, 'REFUNDED');
+        return 'refunded';
+      }
       if (event.type === 'payment_intent.payment_failed') {
         if (payment.status === 'pending') payment.status = 'failed';
         return 'failed';
@@ -262,6 +292,74 @@ export function fakeOrderDeps(
 
     async claimJobs(limit, kinds) {
       return jobs.filter((j) => j.status === 'pending' && kinds.includes(j.kind)).slice(0, limit);
+    },
+
+    async enqueueJob(kind, payload) {
+      jobs.push({ id: nextJob++, kind, payload, status: 'pending' });
+    },
+
+    async listKitchenOrders(finishedSince) {
+      const active: readonly string[] = ACTIVE_KITCHEN_STATUSES;
+      return [...orders.values()]
+        .filter(
+          (o) =>
+            active.includes(o.status) ||
+            (o.paidAt !== null && o.status !== 'PENDING_PAYMENT' && o.updatedAt >= finishedSince),
+        )
+        .map((o): KitchenOrder => ({
+          id: o.id,
+          orderNumber: o.orderNumber,
+          status: o.status,
+          channel: 'web',
+          fulfilment: o.input.fulfilment,
+          createdAt: o.createdAt.toISOString(),
+          paidAt: o.paidAt?.toISOString() ?? null,
+          scheduledFor: o.input.scheduledFor,
+          estimatedReadyAt: o.estimatedReadyAt,
+          updatedAt: o.updatedAt.toISOString(),
+          customerName: o.input.customerName,
+          customerPhone: o.input.customerPhone,
+          address: o.input.address,
+          notes: o.input.notes,
+          rejectReason: o.rejectReason,
+          items: o.input.items.map((item, index) => ({
+            id: itemId(o.orderNumber, index),
+            name: item.name,
+            variantName: item.variantName,
+            quantity: item.quantity,
+            notes: item.notes,
+            done: o.doneItems.has(index),
+            allergens: item.allergens,
+            allergensConfirmed: item.allergensConfirmed,
+            options: item.options.map((opt) => ({ groupName: opt.groupName, name: opt.name })),
+          })),
+        }));
+    },
+
+    async acceptOrder(orderId, prepMinutes, actor) {
+      const order = guarded(orderId, 'ACCEPTED');
+      move(order, 'ACCEPTED', actor.id ?? undefined);
+      order.estimatedReadyAt =
+        order.input.scheduledFor ?? new Date(now.getTime() + prepMinutes * 60_000).toISOString();
+    },
+
+    async rejectOrder(orderId, reason, actor) {
+      const order = guarded(orderId, 'REJECTED');
+      move(order, 'REJECTED', actor.id ?? undefined);
+      order.rejectReason = reason;
+    },
+
+    async transitionOrder(orderId, to, actor) {
+      move(guarded(orderId, to), to, actor.id ?? undefined);
+    },
+
+    async setItemDone(orderId, id, done) {
+      const order = orders.get(orderId);
+      const index = order?.input.items.findIndex((_, i) => itemId(order.orderNumber, i) === id);
+      if (!order || index === undefined || index < 0) return false;
+      if (done) order.doneItems.add(index);
+      else order.doneItems.delete(index);
+      return true;
     },
 
     async finishJob(id, ok) {
