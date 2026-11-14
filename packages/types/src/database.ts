@@ -128,6 +128,36 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_zones: {
+        Row: {
+          fee_pence: number
+          id: string
+          is_active: boolean
+          min_order_pence: number
+          name: string
+          postcode_prefixes: string[]
+          sort_order: number
+        }
+        Insert: {
+          fee_pence: number
+          id?: string
+          is_active?: boolean
+          min_order_pence?: number
+          name: string
+          postcode_prefixes: string[]
+          sort_order?: number
+        }
+        Update: {
+          fee_pence?: number
+          id?: string
+          is_active?: boolean
+          min_order_pence?: number
+          name?: string
+          postcode_prefixes?: string[]
+          sort_order?: number
+        }
+        Relationships: []
+      }
       dietary_tags: {
         Row: {
           code: string
@@ -143,6 +173,21 @@ export type Database = {
           code?: string
           name?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      holiday_closures: {
+        Row: {
+          closed_on: string
+          reason: string
+        }
+        Insert: {
+          closed_on: string
+          reason?: string
+        }
+        Update: {
+          closed_on?: string
+          reason?: string
         }
         Relationships: []
       }
@@ -283,6 +328,42 @@ export type Database = {
           },
         ]
       }
+      jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: number
+          kind: string
+          last_error: string | null
+          payload: Json
+          run_after: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: never
+          kind: string
+          last_error?: string | null
+          payload?: Json
+          run_after?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: never
+          kind?: string
+          last_error?: string | null
+          payload?: Json
+          run_after?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           allergens_confirmed: boolean
@@ -341,6 +422,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      opening_hours: {
+        Row: {
+          closes: string
+          is_closed: boolean
+          opens: string
+          weekday: number
+        }
+        Insert: {
+          closes: string
+          is_closed?: boolean
+          opens: string
+          weekday: number
+        }
+        Update: {
+          closes?: string
+          is_closed?: boolean
+          opens?: string
+          weekday?: number
+        }
+        Relationships: []
       }
       option_allergens: {
         Row: {
@@ -469,6 +571,351 @@ export type Database = {
           },
         ]
       }
+      order_item_options: {
+        Row: {
+          group_name: string
+          id: string
+          name: string
+          option_id: string | null
+          order_item_id: string
+          price_pence: number
+          sort_order: number
+        }
+        Insert: {
+          group_name: string
+          id?: string
+          name: string
+          option_id?: string | null
+          order_item_id: string
+          price_pence?: number
+          sort_order?: number
+        }
+        Update: {
+          group_name?: string
+          id?: string
+          name?: string
+          option_id?: string | null
+          order_item_id?: string
+          price_pence?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_options_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_options_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          allergens: Json
+          allergens_confirmed: boolean
+          done_at: string | null
+          id: string
+          item_id: string | null
+          line_total_pence: number
+          name: string
+          notes: string
+          options_pence: number
+          order_id: string
+          quantity: number
+          sort_order: number
+          unit_price_pence: number
+          variant_name: string
+          vat_rate_bp: number
+        }
+        Insert: {
+          allergens?: Json
+          allergens_confirmed?: boolean
+          done_at?: string | null
+          id?: string
+          item_id?: string | null
+          line_total_pence: number
+          name: string
+          notes?: string
+          options_pence?: number
+          order_id: string
+          quantity: number
+          sort_order?: number
+          unit_price_pence: number
+          variant_name: string
+          vat_rate_bp: number
+        }
+        Update: {
+          allergens?: Json
+          allergens_confirmed?: boolean
+          done_at?: string | null
+          id?: string
+          item_id?: string | null
+          line_total_pence?: number
+          name?: string
+          notes?: string
+          options_pence?: number
+          order_id?: string
+          quantity?: number
+          sort_order?: number
+          unit_price_pence?: number
+          variant_name?: string
+          vat_rate_bp?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_status_events: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          from_status: Database["public"]["Enums"]["order_status"] | null
+          id: number
+          order_id: string
+          reason: string | null
+          to_status: Database["public"]["Enums"]["order_status"]
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["order_status"] | null
+          id?: never
+          order_id: string
+          reason?: string | null
+          to_status: Database["public"]["Enums"]["order_status"]
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["order_status"] | null
+          id?: never
+          order_id?: string
+          reason?: string | null
+          to_status?: Database["public"]["Enums"]["order_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_transitions: {
+        Row: {
+          from_status: Database["public"]["Enums"]["order_status"]
+          to_status: Database["public"]["Enums"]["order_status"]
+        }
+        Insert: {
+          from_status: Database["public"]["Enums"]["order_status"]
+          to_status: Database["public"]["Enums"]["order_status"]
+        }
+        Update: {
+          from_status?: Database["public"]["Enums"]["order_status"]
+          to_status?: Database["public"]["Enums"]["order_status"]
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          accepted_prep_minutes: number | null
+          address: Json | null
+          allergen_acknowledged: boolean
+          channel: string
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          delivery_fee_pence: number
+          delivery_zone_id: string | null
+          discount_pence: number
+          estimated_ready_at: string
+          fulfilment: string
+          guest_token_hash: string | null
+          id: string
+          idempotency_key: string | null
+          notes: string
+          order_number: number
+          paid_at: string | null
+          payment_method: string
+          reject_reason: string | null
+          scheduled_for: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal_pence: number
+          tip_pence: number
+          total_pence: number
+          updated_at: string
+          user_id: string | null
+          vat_pence: number
+        }
+        Insert: {
+          accepted_prep_minutes?: number | null
+          address?: Json | null
+          allergen_acknowledged: boolean
+          channel?: string
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          delivery_fee_pence?: number
+          delivery_zone_id?: string | null
+          discount_pence?: number
+          estimated_ready_at: string
+          fulfilment: string
+          guest_token_hash?: string | null
+          id?: string
+          idempotency_key?: string | null
+          notes?: string
+          order_number?: never
+          paid_at?: string | null
+          payment_method?: string
+          reject_reason?: string | null
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          subtotal_pence: number
+          tip_pence?: number
+          total_pence: number
+          updated_at?: string
+          user_id?: string | null
+          vat_pence: number
+        }
+        Update: {
+          accepted_prep_minutes?: number | null
+          address?: Json | null
+          allergen_acknowledged?: boolean
+          channel?: string
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          delivery_fee_pence?: number
+          delivery_zone_id?: string | null
+          discount_pence?: number
+          estimated_ready_at?: string
+          fulfilment?: string
+          guest_token_hash?: string | null
+          id?: string
+          idempotency_key?: string | null
+          notes?: string
+          order_number?: never
+          paid_at?: string | null
+          payment_method?: string
+          reject_reason?: string | null
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          subtotal_pence?: number
+          tip_pence?: number
+          total_pence?: number
+          updated_at?: string
+          user_id?: string | null
+          vat_pence?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_delivery_zone_id_fkey"
+            columns: ["delivery_zone_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          outcome: string | null
+          provider_ref: string | null
+          received_at: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          outcome?: string | null
+          provider_ref?: string | null
+          received_at?: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          outcome?: string | null
+          provider_ref?: string | null
+          received_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount_pence: number
+          created_at: string
+          disputed: boolean
+          id: string
+          order_id: string
+          provider: string
+          provider_ref: string
+          refunded_pence: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_pence: number
+          created_at?: string
+          disputed?: boolean
+          id?: string
+          order_id: string
+          provider: string
+          provider_ref: string
+          refunded_pence?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_pence?: number
+          created_at?: string
+          disputed?: boolean
+          id?: string
+          order_id?: string
+          provider?: string
+          provider_ref?: string
+          refunded_pence?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -502,6 +949,60 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_settings: {
+        Row: {
+          busy_extra_minutes: number
+          busy_mode: boolean
+          cash_enabled: boolean
+          collection_minutes: number
+          delivery_minutes: number
+          id: boolean
+          max_schedule_days: number
+          ordering_paused: boolean
+          paused_message: string
+          pending_payment_minutes: number
+          shop_name: string
+          slot_minutes: number
+          timezone: string
+          tips_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          busy_extra_minutes?: number
+          busy_mode?: boolean
+          cash_enabled?: boolean
+          collection_minutes?: number
+          delivery_minutes?: number
+          id?: boolean
+          max_schedule_days?: number
+          ordering_paused?: boolean
+          paused_message?: string
+          pending_payment_minutes?: number
+          shop_name?: string
+          slot_minutes?: number
+          timezone?: string
+          tips_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          busy_extra_minutes?: number
+          busy_mode?: boolean
+          cash_enabled?: boolean
+          collection_minutes?: number
+          delivery_minutes?: number
+          id?: boolean
+          max_schedule_days?: number
+          ordering_paused?: boolean
+          paused_message?: string
+          pending_payment_minutes?: number
+          shop_name?: string
+          slot_minutes?: number
+          timezone?: string
+          tips_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           granted_at: string
@@ -528,7 +1029,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_jobs: {
+        Args: { p_kinds: string[]; p_limit: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          id: number
+          kind: string
+          last_error: string | null
+          payload: Json
+          run_after: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      create_order: { Args: { p: Json }; Returns: Json }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      expire_pending_orders: {
+        Args: never
+        Returns: {
+          order_id: string
+          provider_ref: string
+        }[]
+      }
+      finish_job: {
+        Args: { p_error: string; p_id: number; p_ok: boolean }
+        Returns: undefined
+      }
       has_role: {
         Args: { minimum: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
@@ -537,11 +1070,60 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      kitchen_accept_order: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: string
+          p_order_id: string
+          p_prep_minutes: number
+        }
+        Returns: Database["public"]["Enums"]["order_status"]
+      }
+      kitchen_reject_order: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: string
+          p_order_id: string
+          p_reason: string
+        }
+        Returns: Database["public"]["Enums"]["order_status"]
+      }
+      kitchen_set_item_done: {
+        Args: { p_done: boolean; p_item_id: string; p_order_id: string }
+        Returns: boolean
+      }
+      notify_kitchen: {
+        Args: { p_order_id: string; p_status: string }
+        Returns: undefined
+      }
+      record_payment_event: { Args: { p: Json }; Returns: string }
       save_menu_item: { Args: { p: Json }; Returns: string }
       save_menu_option: { Args: { p: Json }; Returns: string }
+      transition_order: {
+        Args: {
+          p_actor_id: string
+          p_actor_role: string
+          p_order_id: string
+          p_reason: string
+          p_to: Database["public"]["Enums"]["order_status"]
+        }
+        Returns: Database["public"]["Enums"]["order_status"]
+      }
     }
     Enums: {
       app_role: "customer" | "kitchen" | "manager" | "admin"
+      order_status:
+        | "PENDING_PAYMENT"
+        | "RECEIVED"
+        | "ACCEPTED"
+        | "PREPARING"
+        | "READY"
+        | "OUT_FOR_DELIVERY"
+        | "COLLECTED"
+        | "COMPLETED"
+        | "REJECTED"
+        | "CANCELLED"
+        | "REFUNDED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -670,6 +1252,19 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["customer", "kitchen", "manager", "admin"],
+      order_status: [
+        "PENDING_PAYMENT",
+        "RECEIVED",
+        "ACCEPTED",
+        "PREPARING",
+        "READY",
+        "OUT_FOR_DELIVERY",
+        "COLLECTED",
+        "COMPLETED",
+        "REJECTED",
+        "CANCELLED",
+        "REFUNDED",
+      ],
     },
   },
 } as const
