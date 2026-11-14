@@ -5,6 +5,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { ApiError } from '@mp/api-client';
 import { MENU_IMAGE_MAX_BYTES, MENU_IMAGE_TYPES, menuImagePath } from '@mp/validation';
 import { browserApi } from '@/lib/api-browser';
+import { PHOTO_MAX_ORIGINAL_BYTES, formatBytes, prepareImage } from '@/lib/resize-image';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 const BUCKET = 'menu';
@@ -48,30 +49,58 @@ export function ItemImage({
     event.target.value = '';
     if (!file) return;
 
-    const extension = MENU_IMAGE_TYPES[file.type as keyof typeof MENU_IMAGE_TYPES];
-    if (!extension) {
+    if (!(file.type in MENU_IMAGE_TYPES)) {
       setMessage({ tone: 'error', text: 'Choose a JPG, PNG, WebP or GIF file.' });
       return;
     }
-    if (file.size > MENU_IMAGE_MAX_BYTES) {
-      const mb = (file.size / 1024 / 1024).toFixed(1);
-      setMessage({ tone: 'error', text: `That file is ${mb} MB. The limit is 5 MB.` });
+    // GIFs are uploaded as they are, so the 5 MB limit applies to the original.
+    // Photos are shrunk first, so a much larger original is fine.
+    const isGif = file.type === 'image/gif';
+    const limit = isGif ? MENU_IMAGE_MAX_BYTES : PHOTO_MAX_ORIGINAL_BYTES;
+    if (file.size > limit) {
+      setMessage({
+        tone: 'error',
+        text: `That file is ${formatBytes(file.size)}. The limit is ${formatBytes(limit)}${isGif ? ' for a GIF' : ''}.`,
+      });
       return;
     }
 
     setBusy(true);
     setMessage(null);
     try {
+      let image;
+      try {
+        image = await prepareImage(file);
+      } catch {
+        setMessage({ tone: 'error', text: 'That file could not be read as an image.' });
+        return;
+      }
+      if (image.blob.size > MENU_IMAGE_MAX_BYTES) {
+        setMessage({ tone: 'error', text: 'That image is still over 5 MB after resizing.' });
+        return;
+      }
+
       // A new name each time, so browsers never show a stale cached photo.
-      const path = menuImagePath(itemId, `photo-${Date.now().toString(36)}`, extension);
-      const { error } = await supabaseBrowser()
-        .storage.from(BUCKET)
-        .upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: false });
+      const path = menuImagePath(
+        itemId,
+        `photo-${Date.now().toString(36)}`,
+        MENU_IMAGE_TYPES[image.contentType],
+      );
+      const { error } = await supabaseBrowser().storage.from(BUCKET).upload(path, image.blob, {
+        contentType: image.contentType,
+        cacheControl: '31536000',
+        upsert: false,
+      });
       if (error) throw new Error(error.message);
 
       await browserApi().admin.setItemImage(itemId, path);
       await removeFile(currentPath);
-      setMessage({ tone: 'ok', text: 'Photo saved.' });
+      setMessage({
+        tone: 'ok',
+        text: image.resized
+          ? `Photo saved. Resized from ${formatBytes(file.size)} to ${formatBytes(image.blob.size)}.`
+          : `Photo saved (${formatBytes(image.blob.size)}).`,
+      });
       router.refresh();
     } catch (e) {
       setMessage({
@@ -151,7 +180,8 @@ export function ItemImage({
             )}
           </div>
           <p className="text-xs text-ink-500">
-            JPG, PNG, WebP or GIF, up to 5 MB. Landscape works best (about 1200 × 800). The photo is
+            JPG, PNG or WebP photos are resized automatically for the web, so phone photos are fine.
+            GIFs are kept as they are and must be under 5 MB. Landscape works best. The photo is
             saved straight away; you do not need to press Save changes. Only use images you own or
             have permission to use.
           </p>
