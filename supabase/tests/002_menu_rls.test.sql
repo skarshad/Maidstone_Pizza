@@ -1,7 +1,7 @@
 -- RLS and write-rule tests for the Phase 2 menu tables.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(38);
 
 -- ---- fixtures -------------------------------------------------------------
 insert into auth.users (id, email) values
@@ -97,6 +97,10 @@ select throws_ok(
   $$select public.save_menu_item('{}'::jsonb)$$,
   '42501', null, 'anon cannot call save_menu_item'
 );
+select throws_ok(
+  $$insert into storage.objects (bucket_id, name) values ('menu', 'items/x/anon.jpg')$$,
+  '42501', null, 'anon cannot upload a menu image'
+);
 reset role;
 
 -- ---- customer -------------------------------------------------------------
@@ -123,6 +127,15 @@ select is_empty(
 select throws_ok(
   $$select public.save_menu_item('{"variants":[{"slug":"s","name":"S","price_pence":1}]}'::jsonb)$$,
   '42501', null, 'customer cannot call save_menu_item'
+);
+select throws_ok(
+  $$insert into storage.objects (bucket_id, name) values ('menu', 'items/x/customer.jpg')$$,
+  '42501', null, 'customer cannot upload a menu image'
+);
+select is_empty(
+  $$update public.menu_items set image_path = 'items/20000000-0000-0000-0000-000000000001/photo-1.gif'
+    where slug = 't-visible' returning id$$,
+  'customer cannot set an item image'
 );
 reset role;
 
@@ -199,6 +212,31 @@ select lives_ok(
     }'::jsonb)$$,
   'manager can update an option and its prices'
 );
+select lives_ok(
+  $$insert into storage.objects (bucket_id, name) values ('menu', 'items/20000000-0000-0000-0000-000000000001/photo-1.gif')$$,
+  'manager can upload a menu image'
+);
+select throws_ok(
+  $$insert into storage.objects (bucket_id, name) values ('other-bucket', 'x.jpg')$$,
+  '42501', null, 'the manager rule covers the menu bucket only'
+);
+select isnt_empty(
+  $$update public.menu_items set image_path = 'items/20000000-0000-0000-0000-000000000001/photo-1.gif'
+    where slug = 't-visible' returning id$$,
+  'manager can set an item image'
+);
+select throws_ok(
+  $$update public.menu_items set image_path = 'items/20000000-0000-0000-0000-000000000002/photo-1.gif'
+    where slug = 't-visible'$$,
+  '23514', null, 'an image path must sit in the item''s own folder'
+);
+select throws_ok(
+  $$update public.menu_items set image_path = 'items/20000000-0000-0000-0000-000000000001/evil.svg'
+    where slug = 't-visible'$$,
+  '23514', null, 'only image file types are accepted as a path'
+);
+-- Deleting is covered by the "managers delete menu images" policy, but Supabase
+-- blocks direct SQL deletes from storage tables, so it cannot be tested here.
 reset role;
 
 select is(

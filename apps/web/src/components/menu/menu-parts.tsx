@@ -64,9 +64,24 @@ export function ItemCard({
         href={`/menu/${category.slug}/${item.slug}`}
         className="group flex h-full flex-col overflow-hidden rounded-xl bg-white shadow-card ring-1 ring-ink-900/5 transition-shadow duration-150 hover:shadow-raised"
       >
-        {/* Photos are added once the owner supplies images they have the rights to. */}
-        <div className="relative flex h-24 items-end overflow-hidden bg-cream-200 px-4 pb-3">
-          <Sunburst className="pointer-events-none absolute -bottom-8 left-1/2 w-72 -translate-x-1/2 text-red-500/15" />
+        <div
+          className={
+            'relative flex items-end overflow-hidden bg-cream-200 px-4 pb-3 ' +
+            (item.imageUrl ? 'h-44' : 'h-24')
+          }
+        >
+          {item.imageUrl ? (
+            // Plain img so animated GIFs play. Decorative: the name is right below.
+            <img
+              src={item.imageUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <Sunburst className="pointer-events-none absolute -bottom-8 left-1/2 w-72 -translate-x-1/2 text-red-500/15" />
+          )}
           <span className="relative rounded-full bg-ink-900 px-3 py-1 text-sm font-semibold text-cream-100">
             {single ? '' : 'from '}
             {formatPence(lowestPrice(item))}

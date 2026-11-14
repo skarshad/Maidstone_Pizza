@@ -52,7 +52,15 @@ export default async function ItemPage({ params }: Props) {
             <ItemConfigurator item={item} groups={resolveGroups(item, menu)} />
           </div>
         </div>
-        <aside className="lg:pt-14">
+        <aside className="space-y-4 lg:pt-14">
+          {item.imageUrl && (
+            // Plain img so animated GIFs play.
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="aspect-[3/2] w-full rounded-xl object-cover shadow-card"
+            />
+          )}
           <AllergenPanel item={item} menu={menu} />
         </aside>
       </div>

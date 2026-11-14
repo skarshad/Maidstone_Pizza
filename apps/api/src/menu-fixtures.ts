@@ -173,6 +173,10 @@ export function fakeMenuStore(): FakeMenuStore {
       calls.push({ method: 'setItemAvailability', token, args: [id, input] });
       mustExist(id);
     },
+    setItemImage: async (token, id, imagePath) => {
+      calls.push({ method: 'setItemImage', token, args: [id, imagePath] });
+      mustExist(id);
+    },
     deleteItem: async (token, id) => {
       calls.push({ method: 'deleteItem', token, args: [id] });
       mustExist(id);

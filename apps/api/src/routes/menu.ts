@@ -3,6 +3,7 @@ import {
   adminMenuSchema,
   categoryPatchSchema,
   itemAvailabilitySchema,
+  itemImageSchema,
   menuSchema,
   saveMenuItemSchema,
   saveMenuOptionSchema,
@@ -66,6 +67,15 @@ const availabilityRoute = createRoute({
   ...staff,
   summary: 'Publish, hide or mark an item sold out',
   request: { params: idParam, body: { required: true, content: json(itemAvailabilitySchema) } },
+  responses: { 200: { description: 'Saved', content: json(OkSchema) }, ...errors },
+});
+
+const imageRoute = createRoute({
+  method: 'patch',
+  path: '/v1/admin/menu/items/{id}/image',
+  ...staff,
+  summary: 'Set or remove the photo for an item (the file itself goes to Storage)',
+  request: { params: idParam, body: { required: true, content: json(itemImageSchema) } },
   responses: { 200: { description: 'Saved', content: json(OkSchema) }, ...errors },
 });
 
@@ -150,6 +160,22 @@ export function registerMenuRoutes(app: OpenAPIHono<AppEnv>) {
       c
         .get('deps')
         .menu.setItemAvailability(c.get('token')!, c.req.valid('param').id, c.req.valid('json')),
+    );
+    if (!result.ok) {
+      return c.json(errorBody(result.error.code, result.error.message), STATUS[result.error.code]);
+    }
+    return c.json({ ok: true as const }, 200);
+  });
+
+  app.openapi(imageRoute, async (c) => {
+    const { id } = c.req.valid('param');
+    const { imagePath } = c.req.valid('json');
+    // A photo must sit in the item's own folder, so one item cannot point at another's file.
+    if (imagePath !== null && !imagePath.startsWith(`items/${id}/`)) {
+      return c.json(errorBody('invalid', 'That image does not belong to this item.'), 400);
+    }
+    const result = await attempt(() =>
+      c.get('deps').menu.setItemImage(c.get('token')!, id, imagePath),
     );
     if (!result.ok) {
       return c.json(errorBody(result.error.code, result.error.message), STATUS[result.error.code]);

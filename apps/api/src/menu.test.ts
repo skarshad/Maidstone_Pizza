@@ -125,6 +125,11 @@ describe('admin menu routes', () => {
     ['POST', '/v1/admin/menu/items', validItem],
     ['PUT', `/v1/admin/menu/items/${IDS.special}`, validItem],
     ['PATCH', `/v1/admin/menu/items/${IDS.special}/availability`, { isPublished: false }],
+    [
+      'PATCH',
+      `/v1/admin/menu/items/${IDS.special}/image`,
+      { imagePath: `items/${IDS.special}/photo-1.gif` },
+    ],
     ['DELETE', `/v1/admin/menu/items/${IDS.special}`],
     [
       'PUT',
@@ -169,6 +174,7 @@ describe('admin menu routes', () => {
       'saveItem',
       'saveItem',
       'setItemAvailability',
+      'setItemImage',
       'deleteItem',
       'saveOption',
       'updateCategory',
@@ -207,6 +213,32 @@ describe('admin menu routes', () => {
       expect(await res.json()).toMatchObject({ error: { code: 'invalid' } });
     }
     expect(menu.calls).toEqual([]);
+  });
+
+  it("only accepts a photo path inside the item's own folder, with an image extension", async () => {
+    const { app, menu } = setup();
+    const path = `/v1/admin/menu/items/${IDS.special}/image`;
+    const bad = [
+      `items/${IDS.draft}/photo-1.gif`,
+      `items/${IDS.special}/../secret.gif`,
+      `items/${IDS.special}/photo.svg`,
+      `items/${IDS.special}/photo.gif?x=1`,
+      'https://evil.test/a.gif',
+    ];
+    for (const imagePath of bad) {
+      const res = await app.request(
+        path,
+        as('manager', { method: 'PATCH', ...body({ imagePath }) }),
+      );
+      expect(res.status, imagePath).toBe(400);
+    }
+    expect(menu.calls).toEqual([]);
+    const cleared = await app.request(
+      path,
+      as('manager', { method: 'PATCH', ...body({ imagePath: null }) }),
+    );
+    expect(cleared.status).toBe(200);
+    expect(menu.calls.at(-1)!.args).toEqual([IDS.special, null]);
   });
 
   it('rejects a malformed id', async () => {

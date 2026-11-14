@@ -190,3 +190,27 @@ export function isSoldOut(soldOutUntil: string | null | undefined, now: Date): b
   const until = Date.parse(soldOutUntil);
   return Number.isFinite(until) && until > now.getTime();
 }
+
+// ---- item photos ------------------------------------------------------------
+
+export const MENU_IMAGE_TYPES = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+} as const;
+export const MENU_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Where an item's photo lives inside the "menu" storage bucket. */
+export function menuImagePath(itemId: string, fileName: string, extension: string): string {
+  return `items/${itemId}/${fileName}.${extension}`;
+}
+
+export const itemImageSchema = z.object({
+  /** Path inside the menu bucket, or null to remove the photo. */
+  imagePath: z
+    .string()
+    .regex(/^items\/[0-9a-f-]{36}\/[a-z0-9-]{1,60}\.(jpg|jpeg|png|webp|gif)$/)
+    .nullable(),
+});
+export type ItemImageInput = z.infer<typeof itemImageSchema>;

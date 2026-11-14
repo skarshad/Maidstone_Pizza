@@ -13,6 +13,9 @@ export default async function NewItemPage() {
   return (
     <AdminShell user={user}>
       <h1 className="text-2xl">Add an item</h1>
+      <p className="mt-2 text-sm text-ink-500">
+        To add a photo, create the item first, then open it from the menu list.
+      </p>
       <ItemForm menu={menu} />
     </AdminShell>
   );

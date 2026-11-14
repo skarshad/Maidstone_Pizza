@@ -30,6 +30,8 @@ export interface MenuStore {
   /** Creates when `id` is null. Returns the item id. */
   saveItem(token: string, id: string | null, input: SaveMenuItemInput): Promise<string>;
   setItemAvailability(token: string, id: string, input: ItemAvailabilityInput): Promise<void>;
+  /** Sets or clears (null) the path of the item photo in the menu bucket. */
+  setItemImage(token: string, id: string, imagePath: string | null): Promise<void>;
   deleteItem(token: string, id: string): Promise<void>;
   saveOption(token: string, id: string, input: SaveMenuOptionInput): Promise<void>;
   updateCategory(token: string, id: string, input: CategoryPatchInput): Promise<void>;
@@ -153,6 +155,16 @@ export function createMenuStore(config: {
       const { data, error } = await asUser(token)
         .from('menu_items')
         .update(patch)
+        .eq('id', id)
+        .select('id');
+      if (error) throw toStoreError(error);
+      if (!data?.length) throw new StoreError('not_found', 'Not found.');
+    },
+
+    async setItemImage(token, id, imagePath) {
+      const { data, error } = await asUser(token)
+        .from('menu_items')
+        .update({ image_path: imagePath })
         .eq('id', id)
         .select('id');
       if (error) throw toStoreError(error);

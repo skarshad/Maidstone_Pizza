@@ -78,6 +78,8 @@ export function createApiClient(options: ApiClientOptions) {
         request<{ id: string }>(`/v1/admin/menu/items/${id}`, send('PUT', input)),
       setItemAvailability: (id: string, input: ItemAvailabilityInput) =>
         request<{ ok: true }>(`/v1/admin/menu/items/${id}/availability`, send('PATCH', input)),
+      setItemImage: (id: string, imagePath: string | null) =>
+        request<{ ok: true }>(`/v1/admin/menu/items/${id}/image`, send('PATCH', { imagePath })),
       deleteItem: (id: string) =>
         request<{ ok: true }>(`/v1/admin/menu/items/${id}`, { method: 'DELETE' }),
       saveOption: (id: string, input: SaveMenuOptionInput) =>

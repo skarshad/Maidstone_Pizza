@@ -86,7 +86,7 @@ Special Offers and the "3 Dipping Pots" deal are recorded in `menu.seed.json` un
 
 ### 6. Photos: none downloaded
 
-The source's product photos were not downloaded, because the brief allows this only where you are entitled to reuse them and that has not been confirmed for the images. Menu cards use a brand pattern instead. Supply your own photos, or confirm in writing that the source photos may be reused, and they can be added.
+The source's product photos were not downloaded, because the brief allows this only where you are entitled to reuse them and that has not been confirmed for the images. Menu cards use a brand pattern until an item has a photo. Upload your own photos or GIFs (JPG, PNG, WebP or GIF, up to 5 MB) in the admin portal: Menu > open an item > Photo.
 
 ### 7. Smaller points
 
