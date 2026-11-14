@@ -4,11 +4,12 @@ import { env } from '@/env';
 
 /**
  * The published menu from the API, or null if it cannot be reached.
- * Deduplicated per request; the API response is reused for up to a minute.
+ * Deduplicated per request and never reused between requests, so a change made
+ * in the admin portal (photo, price, sold out) shows on the next page load.
  */
 export const getMenu = cache(async (): Promise<Menu | null> => {
   try {
-    const res = await fetch(`${env.NEXT_PUBLIC_API_URL}/v1/menu`, { next: { revalidate: 60 } });
+    const res = await fetch(`${env.NEXT_PUBLIC_API_URL}/v1/menu`, { cache: 'no-store' });
     if (!res.ok) return null;
     return menuSchema.parse(await res.json());
   } catch {
