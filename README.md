@@ -2,7 +2,7 @@
 
 Ordering platform for a pizza takeaway in Maidstone, Kent: customer website, admin portal, kitchen display and API, with iOS and Android apps to follow.
 
-**Status:** Phases 1 and 2 are built: sign-in, the menu with sizes, bases and toppings, and menu management in the admin portal. Basket and checkout come next (Phase 3).
+**Status:** Phases 1 to 3 are built: sign-in, the menu, menu management in the admin portal, and ordering (basket, checkout, payment and order tracking). The kitchen display comes next (Phase 4).
 
 ## Run it locally
 
@@ -45,6 +45,7 @@ Leave that window open, then visit:
 | ---------------------------------------- | ------------------------------- |
 | Customer website                         | http://localhost:3000           |
 | Menu                                     | http://localhost:3000/menu      |
+| Basket                                   | http://localhost:3000/basket    |
 | Design preview (colours, fonts, buttons) | http://localhost:3000/design    |
 | Sign in or create an account             | http://localhost:3000/login     |
 | Admin portal                             | http://localhost:3001           |
@@ -72,6 +73,17 @@ pnpm menu:seed         # load the menu from data/menu.seed.json
 `pnpm menu:seed` is safe to run again: it only adds what is missing and keeps any prices or names changed in the admin portal. See `docs/MENU_IMPORT_NOTES.md` for where the menu came from and what still needs the owner to confirm (allergens above all).
 
 Manage the menu at http://localhost:3001/menu once you have an admin account.
+
+## Placing a test order
+
+No Stripe account is needed to try ordering. `apps/api/.env.local` has `PAYMENTS_SIMULATOR=true`, which replaces the card form with "Simulate paying" and "Simulate a declined card" buttons. No money moves.
+
+1. Open http://localhost:3000/menu, choose an item and press **Add to basket**.
+2. Go to the basket, then **Go to checkout**.
+3. Choose collection or delivery (delivery works for ME14, ME15 and ME16 postcodes), fill in your details and tick the allergen box.
+4. Press **Continue to payment**, then **Simulate paying**. The page moves to "We have your order".
+
+The shop's placeholder hours are 4pm to 11pm. Outside those hours you can still order by choosing a later time. No confirmation email is sent until an email provider is connected; the API window logs a line instead. Connecting real Stripe is covered in `docs/DEPLOYMENT.md`, section 6.
 
 ## Signing in to admin and kitchen
 

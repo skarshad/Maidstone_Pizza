@@ -23,6 +23,7 @@ export interface ItemRow {
   is_published: boolean;
   sold_out_until: string | null;
   allergens_confirmed: boolean;
+  vat_rate_bp: number;
   item_variants: Array<{
     id: string;
     slug: string;
@@ -119,6 +120,7 @@ export function assembleAdminMenu(
           soldOut: isSoldOut(item.sold_out_until, now),
           allergensConfirmed: item.allergens_confirmed,
           allergens: allergenRefs(item.item_allergens, allergenOrder),
+          vatRateBp: item.vat_rate_bp,
           variants: [...item.item_variants].sort(bySort).map((v) => ({
             id: v.id,
             slug: v.slug,

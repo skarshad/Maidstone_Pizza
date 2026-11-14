@@ -6,6 +6,7 @@ import { ROLES } from '@mp/types';
 import { authenticate, errorBody, requireRole, type AppEnv } from './auth';
 import type { Deps } from './deps';
 import { registerMenuRoutes } from './routes/menu';
+import { registerOrderRoutes } from './routes/orders';
 
 const ErrorSchema = z
   .object({ error: z.object({ code: z.string(), message: z.string() }) })
@@ -68,7 +69,7 @@ export function createApp(getDeps: () => Deps) {
   app.use('*', (c, next) =>
     cors({
       origin: c.get('deps').corsOrigins,
-      allowHeaders: ['Authorization', 'Content-Type'],
+      allowHeaders: ['Authorization', 'Content-Type', 'Idempotency-Key', 'X-Order-Token'],
       allowMethods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
       maxAge: 600,
     })(c, next),
@@ -103,6 +104,7 @@ export function createApp(getDeps: () => Deps) {
   });
 
   registerMenuRoutes(app);
+  registerOrderRoutes(app);
 
   app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
     type: 'http',
@@ -112,7 +114,7 @@ export function createApp(getDeps: () => Deps) {
   });
   app.doc('/openapi.json', {
     openapi: '3.0.0',
-    info: { title: 'Maidstone Pizza API', version: '0.2.0' },
+    info: { title: 'Maidstone Pizza API', version: '0.3.0' },
   });
   app.get('/docs', swaggerUI({ url: '/openapi.json' }));
 

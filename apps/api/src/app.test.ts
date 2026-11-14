@@ -4,6 +4,7 @@ import { createApp } from './app';
 import { requireRole } from './auth';
 import type { Deps } from './deps';
 import { fakeMenuStore } from './menu-fixtures';
+import { fakeOrderDeps } from './order-fixtures';
 
 function makeApp(overrides: Partial<Deps> = {}) {
   const deps: Deps = {
@@ -15,6 +16,8 @@ function makeApp(overrides: Partial<Deps> = {}) {
     },
     pingDatabase: async () => true,
     menu: fakeMenuStore(),
+    order: fakeOrderDeps().deps,
+    cronSecret: null,
     ...overrides,
   };
   const app = createApp(() => deps);

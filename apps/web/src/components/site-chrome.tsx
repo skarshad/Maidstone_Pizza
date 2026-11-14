@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { RingDivider, buttonClasses } from '@mp/ui';
+import { BasketLink } from '@/components/basket/basket-link';
 
 // Static on purpose (no cookie read) so marketing and menu pages can be cached.
 export function SiteHeader() {
@@ -22,9 +23,10 @@ export function SiteHeader() {
           <Link href="/menu" className={buttonClasses('ghost')}>
             Menu
           </Link>
-          <Link href="/account" className={buttonClasses('outline')}>
+          <Link href="/account" className={buttonClasses('ghost') + ' max-sm:hidden'}>
             Account
           </Link>
+          <BasketLink />
         </nav>
       </div>
     </header>
@@ -39,6 +41,11 @@ export function SiteFooter() {
         <p className="font-display text-lg font-black">Maidstone Pizza</p>
         {/* TODO(client): real address, phone, company number and opening hours before launch. */}
         <p className="mt-2 text-cream-200">Maidstone, Kent</p>
+        <p className="mt-4">
+          <Link href="/account" className="underline underline-offset-2">
+            Your account and orders
+          </Link>
+        </p>
         <p className="mt-6 text-cream-300">
           Food allergies? Please contact us before ordering. Allergen information is shown on each
           menu item once it has been confirmed.

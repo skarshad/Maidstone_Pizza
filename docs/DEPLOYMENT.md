@@ -52,10 +52,10 @@ They must sign out and in again to receive the new role.
 
 Every variable is validated at startup with zod; a missing one stops the app with a list of names.
 
-| App                                      | File         | Variables                                                                                                                                                                            |
-| ---------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `apps/web`, `apps/admin`, `apps/kitchen` | `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL` (web also `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, Phase 3)           |
-| `apps/api`                               | `.env.local` | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `CORS_ORIGINS`, later `CRON_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `SENTRY_DSN` |
+| App                                      | File         | Variables                                                                                                                                                                                                                                                             |
+| ---------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`, `apps/admin`, `apps/kitchen` | `.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL` (web also `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, Phase 3)                                                                                            |
+| `apps/api`                               | `.env.local` | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `CORS_ORIGINS`, `PUBLIC_SITE_URL`, `CRON_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `PAYMENTS_SIMULATOR`, `RESEND_API_KEY`, `EMAIL_FROM`, later `SENTRY_DSN` |
 
 `SUPABASE_SECRET_KEY` and the Stripe secret keys exist **only** in `apps/api`. `pnpm check:secrets` and CI fail if a client app references them.
 
@@ -86,7 +86,42 @@ Plan tier: the Hobby plan does not permit commercial use, so production needs **
 
 Planned hostnames: `maidstonepizza.co.uk` (web), `admin.`, `kitchen.` and `api.` subdomains. No domain has been bought yet.
 
-## 6. Stripe go-live — later (Phase 3 and 9)
+## 6. Payments (Stripe)
+
+The API takes card payments through Stripe Payment Intents and the Payment Element. An order is created as `PENDING_PAYMENT` and is marked paid **only** when the API receives Stripe's signed `payment_intent.succeeded` webhook. The browser is never trusted to say a payment worked.
+
+### Without a Stripe account: the simulator
+
+With no Stripe keys and `PAYMENTS_SIMULATOR=true` in `apps/api/.env.local`, the order page shows "Simulate paying" and "Simulate a declined card" buttons instead of a card form. A simulated payment is signed and goes through the same webhook-verification code as a real one. The simulator is refused when `VERCEL_ENV` is `production`, whatever the setting says.
+
+### Test mode (do this first)
+
+1. Create a Stripe account and stay in **test mode**.
+2. Dashboard > Developers > API keys: copy the publishable key (`pk_test_...`) and secret key (`sk_test_...`).
+3. Add a webhook endpoint (Developers > Webhooks) pointing at `https://<api-domain>/v1/webhooks/stripe`, subscribed to `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded` and `charge.dispute.created`. Copy its signing secret (`whsec_...`).
+4. Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` and `STRIPE_WEBHOOK_SECRET` on the API (in `apps/api/.env.local` locally, in Vercel for deploys). All three are required; with any missing, Stripe is not used.
+5. Local development cannot receive webhooks from Stripe directly. Install the Stripe CLI and run `stripe listen --forward-to localhost:8787/v1/webhooks/stripe`; use the `whsec_...` it prints as `STRIPE_WEBHOOK_SECRET` while it runs.
+6. Pay with Stripe's test card `4242 4242 4242 4242`, any future expiry and any CVC.
+
+Cards, Apple Pay and Google Pay are offered automatically according to Dashboard > Settings > Payment methods. Apple Pay also needs the website's domain registered in Dashboard > Settings > Payment method domains.
+
+### Going live (Phase 9)
+
+Repeat steps 2 to 4 with live-mode keys and a live-mode webhook endpoint on the production API domain, register the production domain for Apple Pay, and place one real low-value order and refund it.
+
+### What is not built yet
+
+- Refunds from the admin portal (Phase 6). Refunds made in the Stripe Dashboard are already picked up by the webhook.
+- Saved cards (Stripe Customers) and cash on delivery.
+- `payment_review` jobs (a payment for the wrong amount, a payment that arrives after an order was cancelled, a dispute) are recorded in the `jobs` table for staff; the screen for them comes with Phase 6.
+
+### Scheduled work
+
+`/v1/cron/expire-pending` cancels orders left unpaid for 30 minutes, and `/v1/cron/jobs` retries anything queued (confirmation emails). Both need `CRON_SECRET` set on the API. `apps/api/vercel.json` schedules them once a day, which is all the Vercel Hobby plan allows; confirmation emails do not wait for it, because they are sent as soon as the payment webhook arrives. On the Pro plan, change both schedules to every five minutes (`*/5 * * * *`).
+
+### Email
+
+Order confirmations go through Resend when `RESEND_API_KEY` is set and `EMAIL_FROM` uses a domain verified in Resend. Without a key no email is sent; the API logs one line (recipient masked, no content) so the flow can still be tested.
 
 ## 7. Mobile: EAS build and submit — later (Phase 8)
 

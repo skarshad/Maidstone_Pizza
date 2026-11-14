@@ -69,6 +69,8 @@ export const menuItemSchema = z.object({
   /** False until the owner has confirmed this item's allergens. */
   allergensConfirmed: z.boolean(),
   allergens: z.array(allergenRefSchema),
+  /** VAT rate in basis points (2000 = 20%). Prices are VAT-inclusive. */
+  vatRateBp: z.number().int(),
   variants: z.array(menuVariantSchema),
   optionGroups: z.array(menuItemGroupSchema),
 });

@@ -1,10 +1,16 @@
 import type {
   AdminMenu,
   CategoryPatchInput,
+  CheckoutResult,
+  DeliveryCheckResult,
   ItemAvailabilityInput,
   Menu,
+  OrderSummary,
+  OrderView,
+  PricedBasketResponse,
   SaveMenuItemInput,
   SaveMenuOptionInput,
+  ShopInfo,
 } from '@mp/validation';
 
 export interface ApiClientOptions {
@@ -17,11 +23,14 @@ export interface ApiClientOptions {
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  /** The re-priced basket, sent with price_changed and basket_invalid errors. */
+  readonly basket?: PricedBasketResponse;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, basket?: PricedBasketResponse) {
     super(message);
     this.status = status;
     this.code = code;
+    this.basket = basket;
   }
 }
 
@@ -35,6 +44,26 @@ export interface MeResponse {
   id: string;
   email: string | null;
   role: string;
+}
+
+/** What the checkout form sends. Prices are never sent: the server works them out. */
+export interface CheckoutRequest {
+  lines: Array<{
+    itemId: string;
+    variantId: string;
+    quantity: number;
+    selections: Array<{ groupId: string; optionIds: string[] }>;
+    notes: string;
+  }>;
+  fulfilment: 'delivery' | 'collection';
+  scheduledFor: string | null;
+  customer: { name: string; email: string; phone: string };
+  address?: { line1: string; line2: string; town: string; postcode: string };
+  notes: string;
+  tipPence: number;
+  allergenAcknowledged: true;
+  expectedTotalPence: number;
+  paymentMethod: 'card';
 }
 
 /** Minimal typed client for apps/api. Endpoints are added phase by phase. */
@@ -51,25 +80,56 @@ export function createApiClient(options: ApiClientOptions) {
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as {
         error?: { code?: string; message?: string };
+        basket?: PricedBasketResponse;
       } | null;
       throw new ApiError(
         res.status,
         body?.error?.code ?? 'unknown',
         body?.error?.message ?? res.statusText,
+        body?.basket,
       );
     }
     return (await res.json()) as T;
   }
 
-  const send = (method: string, body: unknown): RequestInit => ({
+  const send = (method: string, body: unknown, headers?: Record<string, string>): RequestInit => ({
     method,
     body: JSON.stringify(body),
+    headers,
+  });
+  const withToken = (orderToken?: string | null): RequestInit => ({
+    cache: 'no-store',
+    headers: orderToken ? { 'X-Order-Token': orderToken } : undefined,
   });
 
   return {
     health: () => request<HealthResponse>('/v1/health'),
     me: () => request<MeResponse>('/v1/me'),
     menu: () => request<Menu>('/v1/menu'),
+
+    shop: () => request<ShopInfo>('/v1/shop', { cache: 'no-store' }),
+    checkDelivery: (postcode: string) =>
+      request<DeliveryCheckResult>('/v1/delivery/check', send('POST', { postcode })),
+    /**
+     * Places an order. Pass the same idempotencyKey when retrying the same
+     * attempt, so a double click or a retry cannot create two orders.
+     */
+    checkout: (input: CheckoutRequest, idempotencyKey: string) =>
+      request<CheckoutResult>(
+        '/v1/checkout',
+        send('POST', input, { 'Idempotency-Key': idempotencyKey }),
+      ),
+    /** One order. Guests pass the token from their order link. */
+    order: (id: string, orderToken?: string | null) =>
+      request<OrderView>(`/v1/orders/${id}`, withToken(orderToken)),
+    myOrders: () => request<OrderSummary[]>('/v1/me/orders', { cache: 'no-store' }),
+    /** Test environments only: pretend the card payment succeeded or failed. */
+    simulatePayment: (orderId: string, orderToken: string, outcome: 'succeeded' | 'failed') =>
+      request<{ received: boolean; outcome: string }>(
+        `/v1/dev/payments/${orderId}/simulate`,
+        send('POST', { outcome }, { 'X-Order-Token': orderToken }),
+      ),
+
     admin: {
       menu: () => request<AdminMenu>('/v1/admin/menu', { cache: 'no-store' }),
       createItem: (input: SaveMenuItemInput) =>

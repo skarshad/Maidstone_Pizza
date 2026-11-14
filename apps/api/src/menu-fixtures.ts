@@ -57,6 +57,7 @@ export function menuRows(): MenuRows {
         is_published: true,
         sold_out_until: '2026-11-13T23:00:00+00:00',
         allergens_confirmed: true,
+        vat_rate_bp: 2000,
         item_variants: variants(1),
         item_option_groups: [
           { group_id: IDS.base, sort_order: 1, max_select: null, free_select: 0 },
@@ -78,6 +79,7 @@ export function menuRows(): MenuRows {
         is_published: false,
         sold_out_until: null,
         allergens_confirmed: false,
+        vat_rate_bp: 2000,
         item_variants: variants(2),
         item_option_groups: [],
         item_allergens: [],
@@ -94,6 +96,7 @@ export function menuRows(): MenuRows {
         is_published: true,
         sold_out_until: null,
         allergens_confirmed: false,
+        vat_rate_bp: 2000,
         item_variants: variants(3),
         item_option_groups: [],
         item_allergens: [],

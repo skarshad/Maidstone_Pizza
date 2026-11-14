@@ -38,7 +38,7 @@ export interface MenuStore {
 }
 
 const ITEM_COLUMNS =
-  'id, category_id, slug, name, description, image_path, sort_order, is_published, sold_out_until, allergens_confirmed, ' +
+  'id, category_id, slug, name, description, image_path, sort_order, is_published, sold_out_until, allergens_confirmed, vat_rate_bp, ' +
   'item_variants(id, slug, name, price_pence, sort_order), ' +
   'item_option_groups(group_id, sort_order, max_select, free_select), ' +
   'item_allergens(allergen_code, may_contain), ' +

@@ -3,6 +3,7 @@ import { DM_Sans, Playfair_Display } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { env } from '@/env';
 import { SiteFooter, SiteHeader } from '@/components/site-chrome';
+import { BasketProvider } from '@/lib/basket';
 import './globals.css';
 
 // Self-hosted at build time by next/font: no layout shift, no third-party requests.
@@ -38,11 +39,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to content
         </a>
-        <SiteHeader />
-        <main id="main" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
+        <BasketProvider>
+          <SiteHeader />
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+          <SiteFooter />
+        </BasketProvider>
       </body>
     </html>
   );

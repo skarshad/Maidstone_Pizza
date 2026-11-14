@@ -2,7 +2,7 @@
 
 Ordering platform for a pizza takeaway in Maidstone, Kent: customer web, admin, kitchen display, API, iOS/Android. Full design in `docs/ARCHITECTURE.md`. Read it before making structural changes.
 
-**Current state (2026-11-13):** Phase 2 (menu) code complete: importer, seed, menu tables + RLS + tests, menu API, customer menu pages, admin menu management. The menu migration `20261113090000_menu.sql` passes its tests in a rolled-back dry run but is NOT yet pushed, and the menu is not yet seeded; the owner runs `pnpm db:push --yes`, then `pnpm menu:seed`. Open items for the owner are listed in `docs/MENU_IMPORT_NOTES.md` (allergens are the launch blocker). Dev Supabase project is in Ireland (`eu-west-1`); staging and production must be London. Still open from Phase 1: Git remote, Vercel preview deploy. Next: Phase 3 (basket and checkout). Update this line at the end of every phase.
+**Current state (2026-11-14):** Phases 1 to 3 code complete. Phase 3 adds basket, checkout, order tracking, Stripe + payment simulator, the verified payment webhook, the order state machine and confirmation emails. The orders migration `20261115090000_orders.sql` passes its tests in a rolled-back dry run; the owner pushes it with `pnpm db:push --yes`. No Stripe or Resend account yet: local dev uses `PAYMENTS_SIMULATOR=true` and logs emails. The real Stripe path is typed against the SDK but has never run against Stripe. Not built in Phase 3 (see docs/DEPLOYMENT.md section 6): refunds UI, saved cards, cash, address lookup, checkout rate limiting, E2E tests. Shop hours, delivery zone and fees are placeholders seeded by the migration; the admin screens for them come in Phase 6. Dev Supabase project is in Ireland (`eu-west-1`); staging and production must be London. Still open from Phase 1: Git remote, Vercel preview deploy. Menu owner decisions: `docs/MENU_IMPORT_NOTES.md` (allergens block launch). Next: Phase 4 (kitchen display and realtime). Update this line at the end of every phase.
 
 ## Fixed decisions (ask before changing)
 
@@ -82,4 +82,7 @@ Lint, typecheck and tests green → docs updated → commit → short summary to
 - Supabase grants anon and authenticated full table rights by default: every new table must `revoke all` first, then grant back what is needed.
 - Database tests must not assume an empty database; count only fixture rows.
 - Large multi-file bash heredocs fail on this machine; use the Write tool per file.
+- Orders: customers have no write access to order tables. The API creates and moves orders only through the SQL functions in the orders migration (`create_order`, `transition_order`, `record_payment_event`), using the secret key. Guest order links carry a token derived from the order id (`orderToken` in `apps/api/src/checkout.ts`); it is not stored.
+- Payments go through the `PaymentProvider` interface (`apps/api/src/payments.ts`). Never mark an order paid anywhere except `record_payment_event`, reached from a verified webhook.
+- The basket lives in the browser (localStorage) and holds choices only, never prices.
 - Never stop servers with a blanket `taskkill node.exe`; run them as background tasks and stop that task.

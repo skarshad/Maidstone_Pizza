@@ -30,6 +30,15 @@ export const serverEnvSchema = z.object({
   CRON_SECRET: nonEmpty.optional(),
   // Added in Phase 3 (payments and email); optional until then.
   STRIPE_SECRET_KEY: nonEmpty.optional(),
+  STRIPE_PUBLISHABLE_KEY: nonEmpty.optional(),
+  // 'true' enables the built-in payment simulator when Stripe keys are absent.
+  // Never honoured in production.
+  PAYMENTS_SIMULATOR: z.enum(['true', 'false']).optional(),
+  // Public address of the customer website, for links in emails.
+  PUBLIC_SITE_URL: url.default('http://localhost:3000'),
+  EMAIL_FROM: nonEmpty.default('Maidstone Pizza <orders@maidstonepizza.co.uk>'),
+  // Signs guest order links. Falls back to a value derived from the secret key.
+  ORDER_TOKEN_SECRET: nonEmpty.optional(),
   STRIPE_WEBHOOK_SECRET: nonEmpty.optional(),
   RESEND_API_KEY: nonEmpty.optional(),
   SENTRY_DSN: url.optional(),

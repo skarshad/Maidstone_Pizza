@@ -5,6 +5,7 @@ import { createApp } from './app';
 import type { Deps } from './deps';
 import { assembleAdminMenu, assemblePublicMenu } from './menu-assemble';
 import { IDS, NOW, fakeMenuStore, menuRows, variantId } from './menu-fixtures';
+import { fakeOrderDeps } from './order-fixtures';
 
 const url = (path: string) => `https://cdn.test/${path}`;
 
@@ -18,6 +19,8 @@ function setup() {
     },
     pingDatabase: async () => true,
     menu,
+    order: fakeOrderDeps().deps,
+    cronSecret: null,
   };
   return { app: createApp(() => deps), menu };
 }
