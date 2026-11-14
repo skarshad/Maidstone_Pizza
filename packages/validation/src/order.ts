@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { allergenRefSchema, penceSchema } from './menu';
+import { appliedPromotionSchema } from './promotion';
 
 // Contracts for shop status, basket pricing, checkout and order tracking.
 
@@ -57,6 +58,7 @@ export const pricedLineSchema = z.object({
   lineIndex: z.number().int(),
   itemId: id,
   itemSlug: z.string(),
+  categoryId: id,
   categorySlug: z.string(),
   name: z.string(),
   variantId: id,
@@ -66,6 +68,7 @@ export const pricedLineSchema = z.object({
   unitPricePence: penceSchema,
   optionsPence: penceSchema,
   lineTotalPence: z.number().int().min(0),
+  discountPence: z.number().int().min(0),
   vatRateBp: z.number().int(),
   notes: z.string(),
   allergens: z.array(allergenRefSchema),
@@ -86,6 +89,16 @@ export const pricedBasketSchema = z.object({
   itemCount: z.number().int(),
   subtotalPence: z.number().int(),
   discountPence: z.number().int(),
+  appliedPromotions: z.array(appliedPromotionSchema),
+  /** What happened to an entered promo code. Only set by the server. */
+  promoCode: z
+    .object({
+      code: z.string(),
+      status: z.enum(['applied', 'invalid', 'not_applicable']),
+      message: z.string(),
+    })
+    .nullable()
+    .optional(),
   deliveryFeePence: z.number().int(),
   tipPence: z.number().int(),
   vatPence: z.number().int(),

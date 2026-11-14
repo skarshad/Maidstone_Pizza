@@ -1,6 +1,7 @@
-import type { AllergenRef, Menu } from '@mp/validation';
+import type { AllergenRef, AppliedPromotion, Menu, Promotion } from '@mp/validation';
 import { optionPrice } from './item';
 import { assertPence, type Pence } from './money';
+import { evaluatePromotions, type PromotionContext } from './promotions';
 
 // Prices a whole basket. Pure: no I/O and no clock. The website runs it for an
 // instant preview; the API runs the same function against the live menu at
@@ -74,6 +75,7 @@ export interface PricedLine {
   lineIndex: number;
   itemId: string;
   itemSlug: string;
+  categoryId: string;
   categorySlug: string;
   name: string;
   variantId: string;
@@ -83,6 +85,8 @@ export interface PricedLine {
   unitPricePence: Pence;
   optionsPence: Pence;
   lineTotalPence: Pence;
+  /** Taken off this line by promotions. The customer pays lineTotalPence minus this. */
+  discountPence: Pence;
   vatRateBp: number;
   notes: string;
   allergens: AllergenRef[];
@@ -94,7 +98,10 @@ export interface PricedBasket {
   lines: PricedLine[];
   itemCount: number;
   subtotalPence: Pence;
+  /** Total taken off the items by promotions. */
   discountPence: Pence;
+  /** Promotions applied, in the order they were applied. */
+  appliedPromotions: AppliedPromotion[];
   deliveryFeePence: Pence;
   tipPence: Pence;
   /** VAT contained in the total. Prices are VAT-inclusive. */
@@ -111,10 +118,18 @@ export function vatIncludedBp(grossPence: Pence, rateBp: number): Pence {
   return Math.round((grossPence * rateBp) / (10_000 + rateBp));
 }
 
+/** Promotions to consider, and the facts needed to decide which apply. */
+export interface PromotionInput {
+  /** Active promotions only. */
+  promotions: Promotion[];
+  context: Omit<PromotionContext, 'fulfilment' | 'deliveryFeePence'>;
+}
+
 export function priceBasket(
   input: BasketLineInput[],
   menu: Menu,
   context: PricingContext,
+  promo?: PromotionInput,
 ): PricedBasket {
   const problems: BasketProblem[] = [];
   const lines: PricedLine[] = [];
@@ -215,6 +230,7 @@ export function priceBasket(
       lineIndex,
       itemId: item.id,
       itemSlug: item.slug,
+      categoryId: category.id,
       categorySlug: category.slug,
       name: item.name,
       variantId: variant.id,
@@ -224,6 +240,7 @@ export function priceBasket(
       unitPricePence,
       optionsPence,
       lineTotalPence: (unitPricePence + optionsPence) * line.quantity,
+      discountPence: 0,
       vatRateBp: item.vatRateBp,
       notes: (line.notes ?? '').trim().slice(0, 200),
       allergens: item.allergens,
@@ -268,17 +285,36 @@ export function priceBasket(
     }
   }
 
-  // VAT is worked out per line at its own rate, then delivery. Tips carry no VAT.
-  const vatPence =
-    lines.reduce((sum, l) => sum + vatIncludedBp(l.lineTotalPence, l.vatRateBp), 0) +
-    vatIncludedBp(deliveryFeePence, DELIVERY_VAT_RATE_BP);
+  // Promotions. The delivery minimum above is judged on the subtotal before
+  // discounts, so an offer can never push a basket under the minimum.
+  let discountPence = 0;
+  let appliedPromotions: AppliedPromotion[] = [];
+  if (promo && lines.length > 0) {
+    const result = evaluatePromotions(lines, promo.promotions, {
+      ...promo.context,
+      fulfilment: context.fulfilment,
+      deliveryFeePence,
+    });
+    for (const line of lines) line.discountPence = result.lineDiscounts.get(line.lineIndex) ?? 0;
+    discountPence = result.discountPence;
+    appliedPromotions = result.applied;
+    if (result.freeDelivery) deliveryFeePence = 0;
+  }
 
-  const discountPence = 0; // Promotions arrive in Phase 5.
+  // VAT is worked out per line at its own rate on what is actually paid for
+  // it, then delivery. Tips carry no VAT.
+  const vatPence =
+    lines.reduce(
+      (sum, l) => sum + vatIncludedBp(l.lineTotalPence - l.discountPence, l.vatRateBp),
+      0,
+    ) + vatIncludedBp(deliveryFeePence, DELIVERY_VAT_RATE_BP);
+
   return {
     lines,
     itemCount: lines.reduce((sum, l) => sum + l.quantity, 0),
     subtotalPence,
     discountPence,
+    appliedPromotions,
     deliveryFeePence,
     tipPence,
     vatPence,

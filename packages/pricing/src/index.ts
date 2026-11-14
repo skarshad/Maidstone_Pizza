@@ -2,5 +2,6 @@
 export * from './money';
 export * from './item';
 export * from './basket';
+export * from './promotions';
 export * from './hours';
 export * from './postcode';
